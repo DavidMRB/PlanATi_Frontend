@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "PlanATi",
     description:
       "Aquí puedes hallar las experiencias cercanas a ti que se ajusten a tus necesidades",
-    start_url: "/home",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     background_color: "#F8F9FF",
