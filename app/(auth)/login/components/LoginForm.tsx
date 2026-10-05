@@ -4,7 +4,11 @@ import { Eye, EyeOff, LockKeyhole, Mail, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import SocialButton from "@/components/ui/SocialButton";
 
-export default function LoginForm() {
+type LoginFormProps = {
+  onRegisterClick: () => void;
+};
+
+export default function LoginForm({ onRegisterClick }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -77,9 +81,13 @@ export default function LoginForm() {
 
       <p className="rounded-xl bg-[#eef2ff] px-4 py-4 text-center text-sm text-[#676a79] xl:rounded-lg xl:py-3 xl:text-xs">
         ¿No tienes cuenta?{" "}
-        <a href="/register" className="font-bold text-[#168c83] hover:underline">
+        <button
+          type="button"
+          onClick={onRegisterClick}
+          className="font-bold text-[#168c83] hover:underline"
+        >
           Regístrate aquí ↗
-        </a>
+        </button>
       </p>
     </form>
   );

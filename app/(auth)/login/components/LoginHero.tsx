@@ -1,7 +1,15 @@
-export default function LoginHero() {
+type LoginHeroProps = {
+  isRight?: boolean;
+};
+
+export default function LoginHero({ isRight = false }: LoginHeroProps) {
   return (
     <aside
-      className="relative hidden min-h-[620px] overflow-hidden rounded-l-[1.25rem] bg-cover bg-center md:flex md:flex-col md:justify-between md:p-7 xl:min-h-[532px] xl:rounded-l-[0.75rem] xl:p-5"
+      className={`relative hidden h-full min-h-[620px] overflow-hidden bg-cover bg-center md:flex md:flex-col md:justify-between md:p-7 xl:min-h-[532px] xl:p-5 ${
+        isRight
+          ? "rounded-r-[1.25rem] xl:rounded-r-[0.75rem]"
+          : "rounded-l-[1.25rem] xl:rounded-l-[0.75rem]"
+      }`}
       style={{
         backgroundImage:
           "linear-gradient(180deg, rgba(12,25,56,0.08) 0%, rgba(7,19,42,0.88) 100%), url('https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1000&q=85')",
