@@ -1,8 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { useLayoutEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import { useState } from "react";
 import BrandMark from "@/components/ui/BrandMark";
 import LoginForm from "./LoginForm";
 import LoginHero from "./LoginHero";
@@ -11,37 +10,11 @@ import RegisterForm from "./RegisterForm";
 
 export default function AuthView() {
   const [isRegistering, setIsRegistering] = useState(false);
-  const [cardHeight, setCardHeight] = useState<number>();
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const card = cardRef.current;
-    if (!card || isRegistering) {
-      return;
-    }
-
-    const measureCard = () => {
-      setCardHeight(card.getBoundingClientRect().height);
-    };
-
-    measureCard();
-    const observer = new ResizeObserver(measureCard);
-    observer.observe(card);
-
-    return () => observer.disconnect();
-  }, [isRegistering]);
 
   return (
     <main className="min-h-screen bg-[#f8f9ff] px-5 py-8 text-[#17243d] sm:px-8 sm:py-12 md:flex md:items-center md:justify-center md:px-10 xl:bg-[linear-gradient(135deg,#f8f9ff_0%,#eef4ff_55%,#e8fbfa_100%)] xl:px-0">
       <div
-        ref={cardRef}
-        style={
-          {
-            minHeight: cardHeight,
-            "--auth-card-height": cardHeight ? `${cardHeight}px` : undefined,
-          } as CSSProperties
-        }
-        className="w-full max-w-[1080px] md:flex md:h-[var(--auth-card-height)] md:flex-col md:overflow-hidden md:rounded-[1.25rem] md:bg-white md:shadow-[0_24px_70px_rgba(38,47,99,0.14)] xl:max-w-[820px] xl:rounded-[0.75rem]"
+        className="w-full max-w-[1080px] md:flex md:h-[820px] md:flex-col md:overflow-visible md:rounded-[1.25rem] md:bg-white md:shadow-[0_24px_70px_rgba(38,47,99,0.14)] xl:h-[650px] xl:max-w-[820px] xl:rounded-[0.75rem]"
       >
         <div className="flex justify-center pb-8 md:hidden">
           <BrandMark compact />
@@ -52,7 +25,7 @@ export default function AuthView() {
               isRegistering
                 ? "md:grid-cols-[1.08fr_0.92fr]"
                 : "md:grid-cols-[0.92fr_1.08fr]"
-            } md:grid`}
+            } md:grid md:h-full md:min-h-0`}
           >
             <motion.div
               layout
@@ -64,13 +37,10 @@ export default function AuthView() {
             <motion.section
               layout
               transition={{ type: "spring", stiffness: 280, damping: 30 }}
-              className={`mx-auto w-full max-w-[540px] md:max-w-none md:px-10 md:py-12 xl:min-h-[532px] xl:px-8 xl:py-8 ${
+              className={`mx-auto h-full w-full max-w-[540px] md:max-w-none md:px-10 md:py-12 xl:px-8 xl:py-8 ${
                 isRegistering ? "md:order-1" : "md:order-2"
               }`}
             >
-              <div className="hidden pb-3 xl:block">
-                <BrandMark compact />
-              </div>
               <AnimatePresence mode="wait" initial={false}>
                 {isRegistering ? (
                   <motion.div

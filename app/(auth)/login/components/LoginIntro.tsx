@@ -1,4 +1,4 @@
-import { Hand } from "lucide-react";
+import BrandMark from "@/components/ui/BrandMark";
 
 type LoginIntroProps = {
   registering?: boolean;
@@ -7,8 +7,10 @@ type LoginIntroProps = {
 export default function LoginIntro({ registering = false }: LoginIntroProps) {
   return (
     <header className="space-y-3 text-center md:text-left xl:space-y-2">
-      <div className="flex items-center justify-center gap-2 text-sm font-semibold text-[#5658dd] md:justify-start">
-        <Hand aria-hidden="true" className="size-5" />
+      <div className="flex items-center justify-center gap-3 text-sm font-semibold text-[#5658dd] md:justify-start">
+        <span className="hidden md:flex">
+          <BrandMark compact />
+        </span>
         <span>{registering ? "Únete a la comunidad" : "Hola de nuevo"}</span>
       </div>
       <h1 className="text-[2rem] font-bold leading-[1.05] tracking-[-0.04em] text-[#12213a] sm:text-[2.35rem] xl:text-[1.85rem]">

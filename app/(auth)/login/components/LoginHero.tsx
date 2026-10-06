@@ -5,7 +5,7 @@ type LoginHeroProps = {
 export default function LoginHero({ isRight = false }: LoginHeroProps) {
   return (
     <aside
-      className={`relative hidden h-full min-h-[620px] overflow-hidden bg-cover bg-center md:flex md:flex-col md:justify-between md:p-7 xl:min-h-[532px] xl:p-5 ${
+      className={`relative hidden h-full min-h-0 overflow-hidden bg-cover bg-center md:flex md:flex-col md:justify-between md:p-7 xl:p-5 ${
         isRight
           ? "rounded-r-[1.25rem] xl:rounded-r-[0.75rem]"
           : "rounded-l-[1.25rem] xl:rounded-l-[0.75rem]"

@@ -10,6 +10,13 @@ type LoginFormProps = {
 
 export default function LoginForm({ onRegisterClick }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const emailIsValid = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
+  const passwordIsValid = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/.test(password);
+  const inputClass =
+    "min-w-0 flex-1 bg-transparent text-sm text-[#17243d] outline-none placeholder:text-[#8e92a3]";
 
   return (
     <form className="mt-8 space-y-5 xl:mt-5 xl:space-y-3" onSubmit={(event) => event.preventDefault()}>
@@ -18,13 +25,18 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
           <span>Correo electrónico</span>
           <span className="text-xs font-normal text-[#6d6e7a]">Requerido</span>
         </span>
-        <span className="flex h-12 items-center gap-3 rounded-xl bg-[#eef2ff] px-4 transition focus-within:ring-2 focus-within:ring-[#6868e8]/30 xl:h-9 xl:gap-2 xl:rounded-lg xl:px-3">
+        <span className={`flex h-12 items-center gap-3 rounded-xl bg-[#eef2ff] px-4 transition focus-within:ring-2 focus-within:ring-[#6868e8]/30 xl:h-9 xl:gap-2 xl:rounded-lg xl:px-3 ${touched.email && !emailIsValid ? "ring-2 ring-red-500" : ""}`}>
           <Mail aria-hidden="true" className="size-5 text-[#81869a] xl:size-4" />
           <input
             required
             type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            onBlur={() => setTouched((current) => ({ ...current, email: true }))}
             placeholder="tu.nombre@ejemplo.com"
-            className="min-w-0 flex-1 bg-transparent text-sm text-[#17243d] outline-none placeholder:text-[#8e92a3]"
+            pattern="[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+            title="Ingresa un correo válido, por ejemplo tu.nombre@ejemplo.com"
+            className={inputClass}
           />
         </span>
       </label>
@@ -36,13 +48,19 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
             ¿Olvidaste tu contraseña?
           </a>
         </span>
-        <span className="flex h-12 items-center gap-3 rounded-xl bg-[#eef2ff] px-4 transition focus-within:ring-2 focus-within:ring-[#6868e8]/30 xl:h-9 xl:gap-2 xl:rounded-lg xl:px-3">
+        <span className={`flex h-12 items-center gap-3 rounded-xl bg-[#eef2ff] px-4 transition focus-within:ring-2 focus-within:ring-[#6868e8]/30 xl:h-9 xl:gap-2 xl:rounded-lg xl:px-3 ${touched.password && !passwordIsValid ? "ring-2 ring-red-500" : ""}`}>
           <LockKeyhole aria-hidden="true" className="size-5 text-[#81869a] xl:size-4" />
           <input
             required
             type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            onBlur={() => setTouched((current) => ({ ...current, password: true }))}
             placeholder="••••••••••••"
-            className="min-w-0 flex-1 bg-transparent text-sm text-[#17243d] outline-none placeholder:text-[#8e92a3]"
+            minLength={8}
+            pattern="(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}"
+            title="Debe tener al menos 8 caracteres, una letra mayúscula y un símbolo especial"
+            className={inputClass}
           />
           <button
             type="button"
@@ -68,7 +86,7 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
         <ArrowRight aria-hidden="true" className="size-5 xl:size-4" />
       </button>
 
-      <div className="flex items-center gap-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#9295a4]">
+      <div className="flex items-center gap-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#9295a4] xl:mt-4">
         <span className="h-px flex-1 bg-[#e4e6f0]" />
         <span>o continúa con</span>
         <span className="h-px flex-1 bg-[#e4e6f0]" />
