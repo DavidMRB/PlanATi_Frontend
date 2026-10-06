@@ -3,10 +3,10 @@
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useState } from "react";
 import BrandMark from "@/components/ui/BrandMark";
-import LoginForm from "./LoginForm";
+import LoginForm from "./LoginForm.tsx";
 import LoginHero from "./LoginHero";
 import LoginIntro from "./LoginIntro";
-import RegisterForm from "./RegisterForm";
+import RegisterForm from "./RegisterForm.tsx";
 
 export default function AuthView() {
   const [isRegistering, setIsRegistering] = useState(false);

@@ -9,67 +9,53 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useRegisterForm } from "./RegisterForm.ts";
 
 type RegisterFormProps = {
   onLoginClick: () => void;
 };
 
 export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [touched, setTouched] = useState({
-    name: false,
-    email: false,
-    phone: false,
-    password: false,
-  });
-  const [verificationCode, setVerificationCode] = useState("");
-  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const nameIsValid = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]{1,50}$/.test(name);
-  const emailIsValid = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
-  const phoneIsValid = /^3[0-9]{9}$/.test(phone);
-  const passwordRules = {
-    length: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    symbol: /[^A-Za-z0-9]/.test(password),
-  };
-  const passwordIsValid = Object.values(passwordRules).every(Boolean);
-  const fieldClass = (hasError: boolean) =>
-    `flex h-12 items-center gap-3 rounded-xl bg-[#eef2ff] px-4 transition focus-within:ring-2 focus-within:ring-[#6868e8]/30 xl:h-9 xl:gap-2 xl:rounded-lg xl:px-3 ${
-      hasError ? "ring-2 ring-red-500" : ""
-    }`;
-  const inputClass =
-    "min-w-0 flex-1 bg-transparent text-sm text-[#17243d] outline-none placeholder:text-[#8e92a3]";
-  const requirementClass = (isMet: boolean, hasFinished: boolean) =>
-    isMet ? "text-emerald-600" : hasFinished ? "text-red-600" : "text-[#858895]";
-
-  const openVerification = () => {
-    if (!phone.trim()) {
-      return;
-    }
-
-    setVerificationCode("");
-    setIsVerificationOpen(true);
-  };
-
-  const verifyPhone = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (verificationCode.length === 6) {
-      setIsPhoneVerified(true);
-      setIsVerificationOpen(false);
-    }
-  };
+  const {
+    showPassword,
+    setShowPassword,
+    name,
+    setName,
+    email,
+    setEmail,
+    phone,
+    setPhone,
+    password,
+    setPassword,
+    touched,
+    setTouched,
+    verificationCode,
+    setVerificationCode,
+    isVerificationOpen,
+    setIsVerificationOpen,
+    isPhoneVerified,
+    setIsPhoneVerified,
+    isSubmitting,
+    submitError,
+    passwordRules,
+    nameIsValid,
+    emailIsValid,
+    phoneIsValid,
+    passwordIsValid,
+    fieldClass,
+    inputClass,
+    requirementClass,
+    openVerification,
+    verifyPhone,
+    handleSubmit,
+  } = useRegisterForm();
 
   return (
     <>
       <form
         className="mt-8 space-y-5 xl:mt-5 xl:space-y-3"
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={handleSubmit}
+        noValidate
       >
         <label className="block space-y-2 xl:space-y-1">
           <span className="flex items-center justify-between text-sm font-semibold text-[#26344d]">
@@ -191,10 +177,11 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
           </ul>
         </label>
 
-        <button type="submit" className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#514ddd] text-base font-bold text-white shadow-[0_8px_18px_rgba(81,77,221,0.24)] transition hover:bg-[#4542ca] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4c4cdd] xl:mt-3 xl:h-9 xl:rounded-lg xl:text-xs">
-          Crear mi cuenta
+        <button type="submit" disabled={isSubmitting} className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#514ddd] text-base font-bold text-white shadow-[0_8px_18px_rgba(81,77,221,0.24)] transition hover:bg-[#4542ca] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4c4cdd] disabled:cursor-not-allowed disabled:opacity-60 xl:mt-3 xl:h-9 xl:rounded-lg xl:text-xs">
+          {isSubmitting ? "Validando..." : "Crear mi cuenta"}
           <ArrowRight aria-hidden="true" className="size-5 xl:size-4" />
         </button>
+        {submitError && <p className="text-center text-xs font-medium text-red-600">{submitError}</p>}
 
         <p className="rounded-xl bg-[#eef2ff] px-4 py-4 text-center text-sm text-[#676a79] xl:rounded-lg xl:py-3 xl:text-xs">
           ¿Ya tienes cuenta?{" "}

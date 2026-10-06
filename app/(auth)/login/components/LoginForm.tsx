@@ -1,25 +1,33 @@
 "use client";
 
 import { Eye, EyeOff, LockKeyhole, Mail, ArrowRight } from "lucide-react";
-import { useState } from "react";
 import SocialButton from "@/components/ui/SocialButton";
+import { useLoginForm } from "./LoginForm.ts";
 
 type LoginFormProps = {
   onRegisterClick: () => void;
 };
 
 export default function LoginForm({ onRegisterClick }: LoginFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [touched, setTouched] = useState({ email: false, password: false });
-  const emailIsValid = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
-  const passwordIsValid = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/.test(password);
-  const inputClass =
-    "min-w-0 flex-1 bg-transparent text-sm text-[#17243d] outline-none placeholder:text-[#8e92a3]";
+  const {
+    showPassword,
+    setShowPassword,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    touched,
+    setTouched,
+    isSubmitting,
+    submitError,
+    emailIsValid,
+    passwordIsValid,
+    inputClass,
+    handleSubmit,
+  } = useLoginForm();
 
   return (
-    <form className="mt-8 space-y-5 xl:mt-5 xl:space-y-3" onSubmit={(event) => event.preventDefault()}>
+    <form className="mt-8 space-y-5 xl:mt-5 xl:space-y-3" onSubmit={handleSubmit} noValidate>
       <label className="block space-y-2 xl:space-y-1">
         <span className="flex items-center justify-between text-sm font-semibold text-[#26344d]">
           <span>Correo electrónico</span>
@@ -80,11 +88,13 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
 
       <button
         type="submit"
+        disabled={isSubmitting}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#514ddd] text-base font-bold text-white shadow-[0_8px_18px_rgba(81,77,221,0.24)] transition hover:bg-[#4542ca] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4c4cdd] xl:h-9 xl:rounded-lg xl:text-xs"
       >
-        Iniciar Sesión
+        {isSubmitting ? "Validando..." : "Iniciar Sesión"}
         <ArrowRight aria-hidden="true" className="size-5 xl:size-4" />
       </button>
+      {submitError && <p className="text-center text-xs font-medium text-red-600">{submitError}</p>}
 
       <div className="flex items-center gap-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#9295a4] xl:mt-4">
         <span className="h-px flex-1 bg-[#e4e6f0]" />
