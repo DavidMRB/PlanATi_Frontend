@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff, LockKeyhole, Mail, ArrowRight } from "lucide-react";
 import SocialButton from "@/components/ui/SocialButton";
+import { API_URL } from "@/lib/api";
 import { useLoginForm } from "./LoginForm.ts";
 
 type LoginFormProps = {
@@ -102,9 +103,10 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
         <span className="h-px flex-1 bg-[#e4e6f0]" />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <SocialButton provider="google">Google</SocialButton>
-        <SocialButton provider="facebook">Facebook</SocialButton>
+      <div className="flex">
+        <SocialButton provider="google" href={`${API_URL}/auth/google`}>
+          Google
+        </SocialButton>
       </div>
 
       <p className="rounded-xl bg-[#eef2ff] px-4 py-4 text-center text-sm text-[#676a79] xl:rounded-lg xl:py-3 xl:text-xs">

@@ -1,13 +1,11 @@
 import {
   ArrowRight,
-  Check,
   Eye,
   EyeOff,
   LockKeyhole,
   Mail,
   Phone,
   UserRound,
-  X,
 } from "lucide-react";
 import { useRegisterForm } from "./RegisterForm.ts";
 
@@ -29,15 +27,6 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
     setPassword,
     touched,
     setTouched,
-    verificationCode,
-    setVerificationCode,
-    isVerificationOpen,
-    setIsVerificationOpen,
-    isPhoneVerified,
-    setIsPhoneVerified,
-    isSendingCode,
-    isVerifyingCode,
-    verificationError,
     isSubmitting,
     submitError,
     passwordRules,
@@ -48,8 +37,6 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
     fieldClass,
     inputClass,
     requirementClass,
-    openVerification,
-    verifyPhone,
     handleSubmit,
   } = useRegisterForm();
 
@@ -120,27 +107,11 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
               value={phone}
               onChange={(event) => {
                 setPhone(event.target.value.replace(/\D/g, "").slice(0, 10));
-                setIsPhoneVerified(false);
               }}
               onBlur={() => setTouched((current) => ({ ...current, phone: true }))}
               placeholder="3000000000"
               className={inputClass}
             />
-            <button
-              type="button"
-              onClick={openVerification}
-              disabled={!phoneIsValid || isPhoneVerified || isSendingCode}
-              className="shrink-0 text-xs font-bold text-[#4c4cdd] transition hover:text-[#3633bd] disabled:cursor-not-allowed disabled:text-[#9b9dad]"
-            >
-              {isPhoneVerified ? (
-                <span className="flex items-center gap-1 text-[#168c83]">
-                  <Check aria-hidden="true" className="size-4" />
-                  Verificado
-                </span>
-              ) : (
-                isSendingCode ? "Enviando..." : "Verificar"
-              )}
-            </button>
           </span>
         </label>
 
@@ -197,49 +168,6 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
         </p>
       </form>
 
-      {isVerificationOpen && (
-        <div
-          role="presentation"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#17243d]/45 px-5 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setIsVerificationOpen(false);
-            }
-          }}
-        >
-          <div role="dialog" aria-modal="true" aria-labelledby="verification-title" className="relative w-full max-w-sm rounded-2xl bg-white p-6 text-[#17243d] shadow-[0_24px_70px_rgba(38,47,99,0.24)]">
-            <button type="button" aria-label="Cerrar verificación" onClick={() => setIsVerificationOpen(false)} className="absolute right-4 top-4 rounded-full p-1 text-[#81869a] transition hover:bg-[#eef2ff] hover:text-[#4c4cdd]">
-              <X aria-hidden="true" className="size-5" />
-            </button>
-            <div className="pr-6">
-              <h2 id="verification-title" className="text-lg font-bold">Verifica tu número</h2>
-              <p className="mt-2 text-sm leading-5 text-[#676a79]">Ingresa los 6 dígitos que enviamos por SMS al número registrado.</p>
-            </div>
-            <form onSubmit={verifyPhone} className="mt-5 space-y-4">
-              <input
-                autoFocus
-                required
-                inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                value={verificationCode}
-                onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, ""))}
-                placeholder="000000"
-                aria-label="Código de verificación de 6 dígitos"
-                className="h-14 w-full rounded-xl bg-[#eef2ff] text-center text-2xl font-bold tracking-[0.45em] text-[#17243d] outline-none transition focus:ring-2 focus:ring-[#6868e8]/30"
-              />
-              {verificationError && (
-                <p className="text-center text-xs font-medium text-red-600">
-                  {verificationError}
-                </p>
-              )}
-              <button type="submit" disabled={verificationCode.length !== 6} className="h-11 w-full rounded-xl bg-[#514ddd] text-sm font-bold text-white transition hover:bg-[#4542ca] disabled:cursor-not-allowed disabled:opacity-50">
-                {isVerifyingCode ? "Verificando..." : "Confirmar número"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </>
   );
 }

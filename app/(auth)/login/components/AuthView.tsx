@@ -14,7 +14,7 @@ export default function AuthView() {
   return (
     <main className="min-h-screen bg-[#f8f9ff] px-5 py-8 text-[#17243d] sm:px-8 sm:py-12 md:flex md:items-center md:justify-center md:px-10 xl:bg-[linear-gradient(135deg,#f8f9ff_0%,#eef4ff_55%,#e8fbfa_100%)] xl:px-0">
       <div
-        className="w-full max-w-[1080px] md:flex md:h-[820px] md:flex-col md:overflow-visible md:rounded-[1.25rem] md:bg-white md:shadow-[0_24px_70px_rgba(38,47,99,0.14)] xl:h-[650px] xl:max-w-[820px] xl:rounded-[0.75rem]"
+        className="w-full max-w-[1080px] md:flex md:h-[820px] md:flex-col md:overflow-hidden md:rounded-[1.25rem] md:bg-white md:shadow-[0_24px_70px_rgba(38,47,99,0.14)] xl:h-[650px] xl:max-w-[820px] xl:rounded-[0.75rem]"
       >
         <div className="flex justify-center pb-8 md:hidden">
           <BrandMark compact />

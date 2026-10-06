@@ -2,12 +2,6 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AUTH_ENDPOINTS, postAuthRequest } from "@/lib/auth-api";
 
-type SmsResponse = {
-  success?: boolean;
-  verified?: boolean;
-  message?: string;
-};
-
 const registerValidation = {
   name: /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]{1,50}$/,
   email: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
@@ -39,19 +33,6 @@ function sendRegisterRequest(payload: {
   return postAuthRequest(AUTH_ENDPOINTS.register, payload);
 }
 
-function requestSmsCode(phone: string) {
-  return postAuthRequest<{ phone: string }, SmsResponse>(AUTH_ENDPOINTS.requestSms, {
-    phone: `+57${phone}`,
-  });
-}
-
-function verifySmsCode(phone: string, code: string) {
-  return postAuthRequest<{ phone: string; code: string }, SmsResponse>(
-    AUTH_ENDPOINTS.verifySms,
-    { phone: `+57${phone}`, code },
-  );
-}
-
 export function useRegisterForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -65,12 +46,6 @@ export function useRegisterForm() {
     phone: false,
     password: false,
   });
-  const [verificationCode, setVerificationCode] = useState("");
-  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [verificationError, setVerificationError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -89,53 +64,6 @@ export function useRegisterForm() {
   const requirementClass = (isMet: boolean, hasFinished: boolean) =>
     isMet ? "text-emerald-600" : hasFinished ? "text-red-600" : "text-[#858895]";
 
-  const openVerification = async () => {
-    if (!phoneIsValid || isSendingCode || isPhoneVerified) {
-      return;
-    }
-
-    setVerificationCode("");
-    setVerificationError("");
-    setIsSendingCode(true);
-    try {
-      const response = await requestSmsCode(phone);
-      if (response?.success === false) {
-        throw new Error(response.message ?? "No fue posible enviar el código.");
-      }
-      setIsVerificationOpen(true);
-    } catch (error) {
-      setVerificationError(
-        error instanceof Error ? error.message : "No fue posible enviar el código.",
-      );
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
-
-  const verifyPhone = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (verificationCode.length !== 6 || isVerifyingCode) {
-      return;
-    }
-
-    setVerificationError("");
-    setIsVerifyingCode(true);
-    try {
-      const response = await verifySmsCode(phone, verificationCode);
-      if (response?.verified === false) {
-        throw new Error(response.message ?? "El código no es válido.");
-      }
-      setIsPhoneVerified(true);
-      setIsVerificationOpen(false);
-    } catch (error) {
-      setVerificationError(
-        error instanceof Error ? error.message : "No fue posible verificar el código.",
-      );
-    } finally {
-      setIsVerifyingCode(false);
-    }
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTouched({ name: true, email: true, phone: true, password: true });
@@ -152,8 +80,9 @@ export function useRegisterForm() {
         email,
         phone,
         password,
-        phoneVerified: isPhoneVerified,
+        phoneVerified: false,
       });
+      sessionStorage.setItem("registrationPhone", phone);
       router.push("/complete-profile");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "No fue posible crear la cuenta.");
@@ -175,15 +104,6 @@ export function useRegisterForm() {
     setPassword,
     touched,
     setTouched,
-    verificationCode,
-    setVerificationCode,
-    isVerificationOpen,
-    setIsVerificationOpen,
-    isPhoneVerified,
-    setIsPhoneVerified,
-    isSendingCode,
-    isVerifyingCode,
-    verificationError,
     isSubmitting,
     submitError,
     passwordRules,
@@ -194,8 +114,6 @@ export function useRegisterForm() {
     fieldClass,
     inputClass,
     requirementClass,
-    openVerification,
-    verifyPhone,
     handleSubmit,
   };
 }
