@@ -154,7 +154,7 @@ export function useRegisterForm() {
         password,
         phoneVerified: isPhoneVerified,
       });
-      router.push("/");
+      router.push("/complete-profile");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "No fue posible crear la cuenta.");
     } finally {
