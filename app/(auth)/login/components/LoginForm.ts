@@ -4,7 +4,7 @@ import { AUTH_ENDPOINTS, postAuthRequest } from "@/lib/auth-api";
 
 const loginValidation = {
   email: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
-  password: /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/,
+  password: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/,
 } as const;
 
 function sendLoginRequest(payload: { email: string; password: string }) {

@@ -35,6 +35,9 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
     setIsVerificationOpen,
     isPhoneVerified,
     setIsPhoneVerified,
+    isSendingCode,
+    isVerifyingCode,
+    verificationError,
     isSubmitting,
     submitError,
     passwordRules,
@@ -126,7 +129,7 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
             <button
               type="button"
               onClick={openVerification}
-              disabled={!phone.trim() || isPhoneVerified}
+              disabled={!phoneIsValid || isPhoneVerified || isSendingCode}
               className="shrink-0 text-xs font-bold text-[#4c4cdd] transition hover:text-[#3633bd] disabled:cursor-not-allowed disabled:text-[#9b9dad]"
             >
               {isPhoneVerified ? (
@@ -135,7 +138,7 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
                   Verificado
                 </span>
               ) : (
-                "Verificar"
+                isSendingCode ? "Enviando..." : "Verificar"
               )}
             </button>
           </span>
@@ -155,8 +158,8 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
               onChange={(event) => setPassword(event.target.value)}
               onBlur={() => setTouched((current) => ({ ...current, password: true }))}
               minLength={8}
-              pattern="(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}"
-              title="Debe tener al menos 8 caracteres, una letra mayúscula y un símbolo especial"
+              pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}"
+              title="Debe tener al menos 8 caracteres, una letra mayúscula, un número y un símbolo especial"
               placeholder="••••••••••••"
               className={inputClass}
             />
@@ -173,6 +176,9 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
             </li>
             <li className={requirementClass(passwordRules.symbol, touched.password)}>
               {passwordRules.symbol ? "✓" : "•"} Un símbolo especial
+            </li>
+            <li className={requirementClass(passwordRules.number, touched.password)}>
+              {passwordRules.number ? "✓" : "•"} Un número
             </li>
           </ul>
         </label>
@@ -222,8 +228,13 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
                 aria-label="Código de verificación de 6 dígitos"
                 className="h-14 w-full rounded-xl bg-[#eef2ff] text-center text-2xl font-bold tracking-[0.45em] text-[#17243d] outline-none transition focus:ring-2 focus:ring-[#6868e8]/30"
               />
+              {verificationError && (
+                <p className="text-center text-xs font-medium text-red-600">
+                  {verificationError}
+                </p>
+              )}
               <button type="submit" disabled={verificationCode.length !== 6} className="h-11 w-full rounded-xl bg-[#514ddd] text-sm font-bold text-white transition hover:bg-[#4542ca] disabled:cursor-not-allowed disabled:opacity-50">
-                Confirmar número
+                {isVerifyingCode ? "Verificando..." : "Confirmar número"}
               </button>
             </form>
           </div>

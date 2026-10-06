@@ -66,8 +66,8 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
             onBlur={() => setTouched((current) => ({ ...current, password: true }))}
             placeholder="••••••••••••"
             minLength={8}
-            pattern="(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}"
-            title="Debe tener al menos 8 caracteres, una letra mayúscula y un símbolo especial"
+            pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}"
+            title="Debe tener al menos 8 caracteres, una letra mayúscula, un número y un símbolo especial"
             className={inputClass}
           />
           <button
