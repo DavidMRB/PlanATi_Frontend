@@ -3,15 +3,21 @@
 import { motion } from "framer-motion";
 import { Camera, Phone, UserRound, X } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import BrandMark from "@/components/ui/BrandMark";
-import { AUTH_ENDPOINTS, getAuthRequest, postAuthRequest } from "@/lib/auth-api";
+import {
+  AUTH_ENDPOINTS,
+  getAuthRequest,
+  patchAuthRequest,
+  postAuthRequest,
+} from "@/lib/auth-api";
 
 type ProfileResponse = {
-  phone?: string;
-  phoneVerified?: boolean;
+  phone_number?: string | null;
+  phone_verified?: boolean;
   user?: {
-    phone?: string;
-    phoneVerified?: boolean;
+    phone_number?: string | null;
+    phone_verified?: boolean;
   };
 };
 
@@ -22,6 +28,7 @@ type SmsResponse = {
 };
 
 export default function CompleteProfileForm() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [profileImage, setProfileImage] = useState("");
@@ -56,10 +63,10 @@ export default function CompleteProfileForm() {
       try {
         const response = await getAuthRequest<ProfileResponse>(AUTH_ENDPOINTS.profile);
         const profile = response?.user ?? response;
-        const registeredPhone = profile?.phone?.replace(/\D/g, "").slice(-10) ?? "";
+        const registeredPhone = profile?.phone_number?.replace(/\D/g, "").slice(-10) ?? "";
         setPhone(registeredPhone);
         setHasRegisteredPhone(Boolean(registeredPhone));
-        setIsPhoneVerified(profile?.phoneVerified ?? false);
+        setIsPhoneVerified(profile?.phone_verified ?? false);
       } catch (error) {
         setProfileError(
           error instanceof Error ? error.message : "No fue posible cargar tu perfil.",
@@ -99,16 +106,17 @@ export default function CompleteProfileForm() {
       return;
     }
 
-    void postAuthRequest(AUTH_ENDPOINTS.saveProfile, {
-      username: username.trim(),
-      phone,
-      phoneVerified: isPhoneVerified,
-      profileImage,
-    }).catch((error) => {
-      setFormError(
-        error instanceof Error ? error.message : "No fue posible guardar tu perfil.",
-      );
-    });
+    void patchAuthRequest(AUTH_ENDPOINTS.saveProfile, {
+      nickname: username.trim(),
+      phone_number: `+57${phone}`,
+      picture: profileImage,
+    })
+      .then(() => router.push("/"))
+      .catch((error) => {
+        setFormError(
+          error instanceof Error ? error.message : "No fue posible guardar tu perfil.",
+        );
+      });
   };
 
   const openVerification = async () => {
@@ -130,9 +138,9 @@ export default function CompleteProfileForm() {
     setVerificationError("");
     setIsSendingCode(true);
     try {
-      const response = await postAuthRequest<{ phone: string }, SmsResponse>(
+      const response = await postAuthRequest<{ phone_number: string }, SmsResponse>(
         AUTH_ENDPOINTS.requestSms,
-        { phone: `+57${phone}` },
+        { phone_number: `+57${phone}` },
       );
       if (response?.success === false) {
         throw new Error(response.message ?? "No fue posible enviar el código.");
@@ -157,9 +165,12 @@ export default function CompleteProfileForm() {
     setIsVerifyingCode(true);
     try {
       const response = await postAuthRequest<
-        { phone: string; code: string },
+        { phone_number: string; code: string },
         SmsResponse
-      >(AUTH_ENDPOINTS.verifySms, { phone: `+57${phone}`, code: verificationCode });
+      >(
+        AUTH_ENDPOINTS.verifySms,
+        { phone_number: `+57${phone}`, code: verificationCode },
+      );
       if (response?.verified === false) {
         throw new Error(response.message ?? "El código no es válido.");
       }
@@ -167,7 +178,7 @@ export default function CompleteProfileForm() {
         ? await getAuthRequest<ProfileResponse>(AUTH_ENDPOINTS.profile)
         : undefined;
       const profile = profileResponse?.user ?? profileResponse;
-      const isVerified = profile?.phoneVerified ?? response?.verified ?? true;
+      const isVerified = profile?.phone_verified ?? response?.verified ?? true;
 
       if (!isVerified) {
         throw new Error("El número todavía no aparece verificado.");

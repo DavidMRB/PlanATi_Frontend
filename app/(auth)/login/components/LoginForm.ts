@@ -1,6 +1,11 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { AUTH_ENDPOINTS, postAuthRequest } from "@/lib/auth-api";
+import {
+  AUTH_ENDPOINTS,
+  postAuthRequest,
+  saveAuthSession,
+  type AuthResponse,
+} from "@/lib/auth-api";
 
 const loginValidation = {
   email: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
@@ -8,7 +13,7 @@ const loginValidation = {
 } as const;
 
 function sendLoginRequest(payload: { email: string; password: string }) {
-  return postAuthRequest(AUTH_ENDPOINTS.login, payload);
+  return postAuthRequest<typeof payload, AuthResponse>(AUTH_ENDPOINTS.login, payload);
 }
 
 export function useLoginForm() {
@@ -35,8 +40,12 @@ export function useLoginForm() {
 
     setIsSubmitting(true);
     try {
-      await sendLoginRequest({ email, password });
-      router.push("/");
+      const response = await sendLoginRequest({ email, password });
+      if (!response) {
+        throw new Error("El servidor no devolvió los datos de autenticación.");
+      }
+      saveAuthSession(response);
+      router.push(response.registration_complete ? "/" : "/complete-profile");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "No fue posible iniciar sesión.");
     } finally {

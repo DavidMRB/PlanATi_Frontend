@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
+import { getAuthHeaders, saveAuthSession } from "@/lib/auth-api";
 
 type Profile = {
-  phone?: string | null;
-  username?: string | null;
-  profileImage?: string | null;
+  phone_number?: string | null;
+  nickname?: string | null;
+  picture?: string | null;
   user?: Profile;
 };
 
@@ -20,9 +21,22 @@ export default function GoogleCallbackPage() {
   useEffect(() => {
     const validateProfile = async () => {
       try {
+        const query = new URLSearchParams(window.location.search);
+        const accessToken = query.get("access_token");
+        const registrationComplete = query.get("registration_complete");
+        const requiresPhoneVerification = query.get("requires_phone_verification");
+
+        if (accessToken) {
+          saveAuthSession({
+            access_token: accessToken,
+            registration_complete: registrationComplete === "true",
+            requires_phone_verification: requiresPhoneVerification === "true",
+          });
+        }
+
         const response = await fetch(PROFILE_ENDPOINT, {
           credentials: "include",
-          headers: { Accept: "application/json" },
+          headers: { Accept: "application/json", ...getAuthHeaders() },
         });
 
         if (!response.ok) {
@@ -32,9 +46,9 @@ export default function GoogleCallbackPage() {
         const responseData = (await response.json()) as Profile;
         const profile = responseData.user ?? responseData;
         const hasMissingData =
-          !profile.phone?.trim() ||
-          !profile.username?.trim() ||
-          !profile.profileImage?.trim();
+          !profile.phone_number?.trim() ||
+          !profile.nickname?.trim() ||
+          !profile.picture?.trim();
 
         router.replace(hasMissingData ? "/complete-profile" : "/");
       } catch (validationError) {
@@ -53,5 +67,4 @@ export default function GoogleCallbackPage() {
     return <p>{error}</p>;
   }
 
-  return <p>Validando tu perfil...</p>;
 }
