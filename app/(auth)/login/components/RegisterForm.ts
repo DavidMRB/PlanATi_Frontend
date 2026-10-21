@@ -3,7 +3,6 @@ import { useState, type FormEvent } from "react";
 import {
   AUTH_ENDPOINTS,
   postAuthRequest,
-  saveAuthSession,
   type AuthResponse,
 } from "@/lib/auth-api";
 
@@ -90,7 +89,6 @@ export function useRegisterForm() {
       if (!response) {
         throw new Error("El servidor no devolvió los datos de autenticación.");
       }
-      saveAuthSession(response);
       sessionStorage.setItem("registrationPhone", phone);
       router.push(response.registration_complete ? "/" : "/complete-profile");
     } catch (error) {

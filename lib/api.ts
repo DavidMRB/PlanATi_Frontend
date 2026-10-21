@@ -6,6 +6,7 @@ export async function apiFetch<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
+    credentials: "include",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -15,6 +16,10 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     throw new Error(`API request failed with status ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json() as Promise<T>;

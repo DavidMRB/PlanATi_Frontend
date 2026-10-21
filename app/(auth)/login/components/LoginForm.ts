@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import {
   AUTH_ENDPOINTS,
   postAuthRequest,
-  saveAuthSession,
+  resolvePostAuthRoute,
   type AuthResponse,
 } from "@/lib/auth-api";
 
@@ -44,8 +44,8 @@ export function useLoginForm() {
       if (!response) {
         throw new Error("El servidor no devolvió los datos de autenticación.");
       }
-      saveAuthSession(response);
-      router.push(response.registration_complete ? "/" : "/complete-profile");
+      const redirectTo = new URLSearchParams(window.location.search).get("redirect");
+      router.push(resolvePostAuthRoute(response, redirectTo));
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "No fue posible iniciar sesión.");
     } finally {
