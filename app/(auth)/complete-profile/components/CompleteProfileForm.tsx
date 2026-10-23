@@ -3,16 +3,24 @@
 import { motion } from "framer-motion";
 import { Camera, Phone, UserRound, X } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import BrandMark from "@/components/ui/BrandMark";
-import { AUTH_ENDPOINTS, getAuthRequest, postAuthRequest } from "@/lib/auth-api";
+import {
+  ApiError,
+  AUTH_ENDPOINTS,
+  getAuthRequest,
+  patchAuthRequest,
+  postAuthRequest,
+} from "@/lib/auth-api";
+import { uploadImage, validateImageFile } from "@/lib/uploads";
 
 type ProfileResponse = {
-  phone?: string;
-  phoneVerified?: boolean;
-  user?: {
-    phone?: string;
-    phoneVerified?: boolean;
-  };
+  phone_number?: string | null;
+  phone_verified?: boolean;
+  nickname?: string | null;
+  picture?: string | null;
+  status?: string;
+  user?: ProfileResponse;
 };
 
 type SmsResponse = {
@@ -22,6 +30,7 @@ type SmsResponse = {
 };
 
 export default function CompleteProfileForm() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [profileImage, setProfileImage] = useState("");
@@ -38,6 +47,7 @@ export default function CompleteProfileForm() {
   const [formError, setFormError] = useState("");
   const [usernameTouched, setUsernameTouched] = useState(false);
   const [imageTouched, setImageTouched] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const phoneIsValid = /^3[0-9]{9}$/.test(phone);
 
@@ -56,11 +66,34 @@ export default function CompleteProfileForm() {
       try {
         const response = await getAuthRequest<ProfileResponse>(AUTH_ENDPOINTS.profile);
         const profile = response?.user ?? response;
-        const registeredPhone = profile?.phone?.replace(/\D/g, "").slice(-10) ?? "";
-        setPhone(registeredPhone);
-        setHasRegisteredPhone(Boolean(registeredPhone));
-        setIsPhoneVerified(profile?.phoneVerified ?? false);
+        if (!profile) {
+          router.replace("/login");
+          return;
+        }
+
+        // Si el usuario ya completó el perfil y verificó su teléfono, redirigir a inicio
+        if (profile.phone_verified && profile.nickname && profile.status === "ACTIVE") {
+          router.replace("/");
+          return;
+        }
+
+        const registeredPhone = profile?.phone_number?.replace(/\D/g, "").slice(-10) ?? "";
+        if (registeredPhone) {
+          setPhone(registeredPhone);
+          setHasRegisteredPhone(true);
+        }
+        if (profile.nickname) {
+          setUsername(profile.nickname);
+        }
+        if (profile.picture) {
+          setProfileImage(profile.picture);
+        }
+        setIsPhoneVerified(profile?.phone_verified ?? false);
       } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          router.replace("/login");
+          return;
+        }
         setProfileError(
           error instanceof Error ? error.message : "No fue posible cargar tu perfil.",
         );
@@ -70,16 +103,37 @@ export default function CompleteProfileForm() {
     };
 
     void loadProfile();
-  }, []);
+  }, [router]);
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) {
       return;
     }
 
-    setProfileImage(URL.createObjectURL(file));
     setImageTouched(true);
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    // Vista previa local mientras sube; al terminar se guarda la URL pública de R2, que sí persiste.
+    const previousImage = profileImage;
+    const localPreview = URL.createObjectURL(file);
+    setFormError("");
+    setProfileImage(localPreview);
+    setIsUploadingImage(true);
+    try {
+      setProfileImage(await uploadImage("avatars", file));
+    } catch (uploadError) {
+      setProfileImage(previousImage);
+      setFormError(uploadError instanceof Error ? uploadError.message : "No fue posible subir la foto.");
+    } finally {
+      URL.revokeObjectURL(localPreview);
+      setIsUploadingImage(false);
+    }
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -99,16 +153,21 @@ export default function CompleteProfileForm() {
       return;
     }
 
-    void postAuthRequest(AUTH_ENDPOINTS.saveProfile, {
-      username: username.trim(),
-      phone,
-      phoneVerified: isPhoneVerified,
-      profileImage,
-    }).catch((error) => {
-      setFormError(
-        error instanceof Error ? error.message : "No fue posible guardar tu perfil.",
-      );
-    });
+    void patchAuthRequest(AUTH_ENDPOINTS.saveProfile, {
+      nickname: username.trim(),
+      phone_number: `+57${phone}`,
+      picture: profileImage,
+    })
+      .then(() => router.push("/"))
+      .catch((error) => {
+        if (error instanceof ApiError && error.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        setFormError(
+          error instanceof Error ? error.message : "No fue posible guardar tu perfil.",
+        );
+      });
   };
 
   const openVerification = async () => {
@@ -130,15 +189,19 @@ export default function CompleteProfileForm() {
     setVerificationError("");
     setIsSendingCode(true);
     try {
-      const response = await postAuthRequest<{ phone: string }, SmsResponse>(
+      const response = await postAuthRequest<{ phone_number: string }, SmsResponse>(
         AUTH_ENDPOINTS.requestSms,
-        { phone: `+57${phone}` },
+        { phone_number: `+57${phone}` },
       );
       if (response?.success === false) {
         throw new Error(response.message ?? "No fue posible enviar el código.");
       }
       setIsVerificationOpen(true);
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace("/login");
+        return;
+      }
       setVerificationError(
         error instanceof Error ? error.message : "No fue posible enviar el código.",
       );
@@ -157,9 +220,12 @@ export default function CompleteProfileForm() {
     setIsVerifyingCode(true);
     try {
       const response = await postAuthRequest<
-        { phone: string; code: string },
+        { phone_number: string; code: string },
         SmsResponse
-      >(AUTH_ENDPOINTS.verifySms, { phone: `+57${phone}`, code: verificationCode });
+      >(
+        AUTH_ENDPOINTS.verifySms,
+        { phone_number: `+57${phone}`, code: verificationCode },
+      );
       if (response?.verified === false) {
         throw new Error(response.message ?? "El código no es válido.");
       }
@@ -167,7 +233,7 @@ export default function CompleteProfileForm() {
         ? await getAuthRequest<ProfileResponse>(AUTH_ENDPOINTS.profile)
         : undefined;
       const profile = profileResponse?.user ?? profileResponse;
-      const isVerified = profile?.phoneVerified ?? response?.verified ?? true;
+      const isVerified = profile?.phone_verified ?? response?.verified ?? true;
 
       if (!isVerified) {
         throw new Error("El número todavía no aparece verificado.");
@@ -176,6 +242,10 @@ export default function CompleteProfileForm() {
       setIsPhoneVerified(true);
       setIsVerificationOpen(false);
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace("/login");
+        return;
+      }
       setVerificationError(
         error instanceof Error ? error.message : "No fue posible verificar el código.",
       );
@@ -220,6 +290,7 @@ export default function CompleteProfileForm() {
                 <img
                   src={profileImage}
                   alt="Vista previa de la foto de perfil"
+                  referrerPolicy="no-referrer"
                   className="size-full rounded-full object-cover"
                 />
               ) : (
@@ -233,13 +304,13 @@ export default function CompleteProfileForm() {
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-                onChange={handleImageChange}
+                onChange={(event) => void handleImageChange(event)}
                 className="sr-only"
               />
             </label>
           </div>
           <p className={`text-center text-xs ${imageTouched && !profileImage ? "text-red-600" : "text-[#858895]"}`}>
-            {profileImage ? "Foto de perfil seleccionada" : "Agrega una foto de perfil (requerida)"}
+            {isUploadingImage ? "Subiendo foto..." : profileImage ? "Foto de perfil seleccionada" : "Agrega una foto de perfil (requerida)"}
           </p>
 
           <label className="block space-y-2">
@@ -302,6 +373,7 @@ export default function CompleteProfileForm() {
             disabled={
               isProfileLoading ||
               isSendingCode ||
+              isUploadingImage ||
               !username.trim() ||
               !profileImage ||
               !phoneIsValid

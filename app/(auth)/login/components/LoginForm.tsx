@@ -1,6 +1,7 @@
 "use client";
 
 import { Eye, EyeOff, LockKeyhole, Mail, ArrowRight } from "lucide-react";
+import { useState } from "react";
 import SocialButton from "@/components/ui/SocialButton";
 import { API_URL } from "@/lib/api";
 import { useLoginForm } from "./LoginForm.ts";
@@ -10,6 +11,8 @@ type LoginFormProps = {
 };
 
 export default function LoginForm({ onRegisterClick }: LoginFormProps) {
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [googleError, setGoogleError] = useState("");
   const {
     showPassword,
     setShowPassword,
@@ -26,6 +29,36 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
     inputClass,
     handleSubmit,
   } = useLoginForm();
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleSubmitting(true);
+    setGoogleError("");
+
+    try {
+      const response = await fetch(`${API_URL}/auth/google`, {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(`No fue posible iniciar sesión con Google (${response.status}).`);
+      }
+
+      const data = (await response.json()) as { authorization_url?: unknown };
+      if (typeof data.authorization_url !== "string" || !data.authorization_url) {
+        throw new Error("La respuesta del servidor no contiene una URL de autorización válida.");
+      }
+
+      window.location.assign(data.authorization_url);
+    } catch (error) {
+      setGoogleError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible iniciar sesión con Google.",
+      );
+      setIsGoogleSubmitting(false);
+    }
+  };
 
   return (
     <form className="mt-8 space-y-5 xl:mt-5 xl:space-y-3" onSubmit={handleSubmit} noValidate>
@@ -104,10 +137,15 @@ export default function LoginForm({ onRegisterClick }: LoginFormProps) {
       </div>
 
       <div className="flex">
-        <SocialButton provider="google" href={`${API_URL}/auth/google`}>
-          Google
+        <SocialButton
+          provider="google"
+          onClick={() => void handleGoogleLogin()}
+          disabled={isGoogleSubmitting}
+        >
+          {isGoogleSubmitting ? "Conectando..." : "Google"}
         </SocialButton>
       </div>
+      {googleError && <p className="text-center text-xs font-medium text-red-600">{googleError}</p>}
 
       <p className="rounded-xl bg-[#eef2ff] px-4 py-4 text-center text-sm text-[#676a79] xl:rounded-lg xl:py-3 xl:text-xs">
         ¿No tienes cuenta?{" "}

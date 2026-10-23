@@ -1,6 +1,10 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { AUTH_ENDPOINTS, postAuthRequest } from "@/lib/auth-api";
+import {
+  AUTH_ENDPOINTS,
+  postAuthRequest,
+  type AuthResponse,
+} from "@/lib/auth-api";
 
 const registerValidation = {
   name: /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]{1,50}$/,
@@ -24,13 +28,13 @@ function getPasswordRules(value: string) {
 }
 
 function sendRegisterRequest(payload: {
-  name: string;
+  full_name: string;
+  nickname: string | null;
   email: string;
-  phone: string;
+  phone_number: string;
   password: string;
-  phoneVerified: boolean;
 }) {
-  return postAuthRequest(AUTH_ENDPOINTS.register, payload);
+  return postAuthRequest<typeof payload, AuthResponse>(AUTH_ENDPOINTS.register, payload);
 }
 
 export function useRegisterForm() {
@@ -75,15 +79,18 @@ export function useRegisterForm() {
 
     setIsSubmitting(true);
     try {
-      await sendRegisterRequest({
-        name,
+      const response = await sendRegisterRequest({
+        full_name: name,
+        nickname: null,
         email,
-        phone,
+        phone_number: `+57${phone}`,
         password,
-        phoneVerified: false,
       });
+      if (!response) {
+        throw new Error("El servidor no devolvió los datos de autenticación.");
+      }
       sessionStorage.setItem("registrationPhone", phone);
-      router.push("/complete-profile");
+      router.push(response.registration_complete ? "/" : "/complete-profile");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "No fue posible crear la cuenta.");
     } finally {
