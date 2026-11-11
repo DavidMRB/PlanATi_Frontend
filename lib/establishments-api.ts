@@ -1,6 +1,24 @@
 import { authEndpoint, getAuthRequest } from "./auth-api";
 import type { EstablishmentImage, MenuItem } from "./restaurant-api";
 
+// Horario semanal: day_of_week 0 = lunes ... 6 = domingo; las horas llegan como "HH:MM:SS".
+export type EstablishmentSchedule = {
+  id: number;
+  day_of_week: number;
+  opening_time: string;
+  closing_time: string;
+};
+
+export type PublicReview = {
+  id: number;
+  user_id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  images?: { id: number; image_url: string }[];
+  reply?: { id: number; comment: string; created_at: string } | null;
+};
+
 export type PublicEstablishment = {
   id: number;
   owner_id: number;
@@ -20,7 +38,8 @@ export type PublicEstablishment = {
   created_at: string;
   // El listado público también devuelve el catálogo y las reseñas completas.
   menu_items?: MenuItem[];
-  reviews?: { id: number; rating: number }[];
+  reviews?: PublicReview[];
+  schedules?: EstablishmentSchedule[];
 };
 
 export type NearbyEstablishment = PublicEstablishment & { distance_km: number };
