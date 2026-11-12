@@ -1,5 +1,5 @@
 ## Estado del restaurante
 
 - **Archivo:** `Frontend/app/(restaurant)/restaurant/status/page.tsx`
-- **Adaptada** `No`
+- **Adaptada** `Si`
 - **Terminada** `No`

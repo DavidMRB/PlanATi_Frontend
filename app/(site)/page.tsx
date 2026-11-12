@@ -4,7 +4,6 @@ import { ArrowRight, BedDouble, CalendarDays, Coffee, FerrisWheel, Flame, MapPin
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Navbar from "@/components/common/Navbar";
 import { averageRating, searchEstablishments, searchNearbyEstablishments, type PublicEstablishment } from "@/lib/establishments-api";
 import { formatCop } from "@/lib/format";
 
@@ -168,7 +167,6 @@ export default function HomePage() {
 
   return (
     <>
-      <Navbar />
       <main className="bg-[#f8f9ff] text-[#17243d]">
         <section className="relative flex min-h-[28rem] items-center justify-center bg-[linear-gradient(135deg,#3f3bb5,#6d69ea_55%,#5df0dc)] px-5 py-16 sm:min-h-[32rem]">
           <div className="absolute inset-0 bg-[#17243d]/25" />

@@ -1,5 +1,5 @@
 ## Productos del restaurante
 
 - **Archivo:** `Frontend/app/(restaurant)/restaurant/products/page.tsx`
-- **Adaptada** `No`
+- **Adaptada** `Si`
 - **Terminada** `No`

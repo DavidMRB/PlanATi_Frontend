@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { Viewport } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import Footer from "@/components/layout/Footer";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
@@ -33,7 +35,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body className="min-h-full flex flex-col">
         <ServiceWorkerRegistration />
-        {children}
+        <AuthProvider>
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

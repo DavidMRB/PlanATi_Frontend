@@ -1,71 +1,104 @@
 "use client";
 
+import { Search } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import NotificationsBell from "@/components/common/NotificationsBell";
+import UserMenu from "@/components/common/UserMenu";
+import { useAuth } from "@/components/providers/AuthProvider";
 import BrandMark from "@/components/ui/BrandMark";
-import { AUTH_ENDPOINTS, getAuthRequest, type UserProfile } from "@/lib/auth-api";
-import LogoutButton from "@/components/common/LogoutButton";
+import PlaceholderLink from "@/components/ui/PlaceholderLink";
 
-type NavLink = { href: string; label: string };
+type NavLink = {
+  label: string;
+  // Sin href el enlace es un PlaceholderLink (la sección aún no existe).
+  href?: string;
+  match?: (pathname: string) => boolean;
+};
 
-// Los enlaces dependen del rol: el visitante anónimo ve solo el directorio y el login.
-function linksForRole(role: string | null | undefined): NavLink[] {
-  const publicLinks: NavLink[] = [{ href: "/explore", label: "Explorar" }];
+const LINKS: NavLink[] = [
+  { label: "Inicio", href: "/", match: (pathname) => pathname === "/" },
+  {
+    label: "Explorar",
+    href: "/explore",
+    match: (pathname) => pathname.startsWith("/explore") || pathname.startsWith("/establishments"),
+  },
+  { label: "Planes" },
+  { label: "Mis Favoritos" },
+];
 
-  if (role === "admin") return [...publicLinks, { href: "/admin/dashboard", label: "Panel admin" }];
-  if (role === "restaurant") return [...publicLinks, { href: "/restaurant/dashboard", label: "Mi restaurante" }];
-  if (role === "user") return [...publicLinks, { href: "/profile", label: "Mi perfil" }];
-  return publicLinks;
-}
-
+// Se monta una sola vez en el layout de las páginas del sitio (app/(site)/layout.tsx); la sesión viene del
+// AuthProvider, así que no consulta la API por su cuenta. El rol solo decide el menú del avatar.
+// Desde md se usa esta misma barra (tablet y escritorio); en móvil se complementa con PublicBottomBar.
 export default function Navbar() {
-  const [user, setUser] = useState<UserProfile | null | undefined>(undefined);
+  const { user, isLoading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    getAuthRequest<UserProfile>(AUTH_ENDPOINTS.profile)
-      .then((profile) => {
-        if (!cancelled) setUser(profile ?? null);
-      })
-      .catch(() => {
-        // Sin sesión (401) o backend caído: se muestra la navegación de visitante.
-        if (!cancelled) setUser(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // En móvil el detalle del establecimiento deja la portada a pantalla completa y usa su propio enlace "Explorar".
+  const hiddenOnMobile = pathname.startsWith("/establishments/");
 
-  const links = linksForRole(user?.role);
-  const isLoading = user === undefined;
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const term = query.trim();
+    router.push(term ? `/explore?search=${encodeURIComponent(term)}` : "/explore");
+  };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#e4e6f0] bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3">
-        <Link href="/" aria-label="Inicio">
-          <BrandMark />
+    <header
+      className={`sticky top-0 z-40 border-b border-[#e4e6f0] bg-white/90 backdrop-blur ${hiddenOnMobile ? "hidden md:block" : ""}`}
+    >
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6 md:h-[4.5rem] lg:gap-6">
+        <Link href="/" aria-label="PlanATi, inicio" className="flex shrink-0 items-center gap-2">
+          <BrandMark compact />
+          <span className="text-xl font-extrabold tracking-tight text-[#514ddd]">PlanATi</span>
         </Link>
 
-        <nav className="flex items-center gap-1 text-sm font-semibold text-[#6d6e7a]">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="rounded-lg px-3 py-2 hover:bg-[#f3f5fb] hover:text-[#4c4cdd]">
-              {link.label}
-            </Link>
-          ))}
+        <form role="search" onSubmit={handleSearch} className="hidden min-w-0 flex-1 lg:block lg:max-w-md">
+          <label className="flex h-11 items-center gap-3 rounded-full border border-[#d7dcf2] bg-[#eef0ff] px-4 focus-within:ring-2 focus-within:ring-[#6868e8]/40">
+            <Search aria-hidden="true" className="size-5 shrink-0 text-[#43506a]" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Explorar lugares, eventos..."
+              aria-label="Buscar lugares y eventos"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#81869a]"
+            />
+          </label>
+        </form>
 
+        <nav aria-label="Principal" className="ml-auto hidden items-center gap-1 text-sm font-semibold md:flex">
+          {LINKS.map(({ label, href, match }) => {
+            const isActive = href ? (match ? match(pathname) : pathname === href) : false;
+            const className = `rounded-lg px-3 py-2 transition ${
+              isActive
+                ? "text-[#514ddd] underline decoration-2 underline-offset-8"
+                : "text-[#26344d] hover:bg-[#f3f5fb] hover:text-[#514ddd]"
+            }`;
+            return href ? (
+              <Link key={label} href={href} aria-current={isActive ? "page" : undefined} className={className}>
+                {label}
+              </Link>
+            ) : (
+              <PlaceholderLink key={label} className={className}>
+                {label}
+              </PlaceholderLink>
+            );
+          })}
+        </nav>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0 md:border-l md:border-[#e4e6f0] md:pl-4">
+          {user && <NotificationsBell />}
+          {user && <UserMenu />}
           {!isLoading && !user && (
-            <Link href="/login" className="ml-2 rounded-xl bg-[#514ddd] px-4 py-2 text-white hover:bg-[#4542ca]">
+            <Link href="/login" className="rounded-xl bg-[#514ddd] px-4 py-2 text-sm font-semibold text-white hover:bg-[#4542ca]">
               Iniciar sesión
             </Link>
           )}
-
-          {user && (
-            <>
-              <span className="ml-2 hidden px-2 text-[#17243d] sm:inline">{user.nickname ?? user.full_name}</span>
-              <LogoutButton />
-            </>
-          )}
-        </nav>
+        </div>
       </div>
     </header>
   );

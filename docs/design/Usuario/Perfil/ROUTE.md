@@ -1,5 +1,5 @@
 ## Perfil de usuario
 
 - **Archivo:** `Frontend/app/(user)/profile/page.tsx`
-- **Adaptada** `No`
+- **Adaptada** `Si`
 - **Terminada** `No`

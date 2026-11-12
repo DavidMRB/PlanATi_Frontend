@@ -64,10 +64,6 @@ export default function NotFound() {
             </a>
           </div>
         </div>
-
-        <footer className="mt-16 text-xs text-[#53586c] md:mt-20">
-          © PlanATi. All rights reserved.
-        </footer>
       </section>
     </main>
   );

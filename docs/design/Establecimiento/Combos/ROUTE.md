@@ -1,5 +1,5 @@
 ## Combos del restaurante
 
 - **Archivo:** `Frontend/app/(restaurant)/restaurant/combos/page.tsx`
-- **Adaptada** `No`
+- **Adaptada** `Si`
 - **Terminada** `No`

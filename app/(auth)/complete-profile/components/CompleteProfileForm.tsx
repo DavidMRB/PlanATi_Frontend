@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
 import BrandMark from "@/components/ui/BrandMark";
 import {
   ApiError,
@@ -48,6 +49,7 @@ type SmsResponse = {
 
 export default function CompleteProfileForm() {
   const router = useRouter();
+  const { refresh: refreshSession } = useAuth();
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -179,7 +181,11 @@ export default function CompleteProfileForm() {
       phone_number: `+57${phone}`,
       picture: profileImage,
     })
-      .then(() => router.push("/"))
+      .then(async () => {
+        // El navbar del sitio lee la sesión del AuthProvider: se refresca para que muestre el apodo nuevo.
+        await refreshSession();
+        router.push("/");
+      })
       .catch((error) => {
         if (error instanceof ApiError && error.status === 401) {
           router.replace("/login");

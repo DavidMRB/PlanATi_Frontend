@@ -1,5 +1,5 @@
 ## Callback de Google
 
 - **Archivo:** `Frontend/app/(auth)/google-callback/page.tsx`
-- **Adaptada** `No`
+- **Adaptada** `Si`
 - **Terminada** `No`

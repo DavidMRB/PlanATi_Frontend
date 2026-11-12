@@ -3,8 +3,6 @@
 import { ArrowLeft, BookOpen, Clock, ExternalLink, MapPin, Star, UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState, type ReactNode } from "react";
-import BrandMark from "@/components/ui/BrandMark";
-import Navbar from "@/components/common/Navbar";
 import {
   getEstablishmentDetail,
   type EstablishmentSchedule,
@@ -93,9 +91,6 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
 
   return (
     <>
-      <div className="hidden md:block">
-        <Navbar />
-      </div>
       <main className="min-h-screen bg-[#f8f9ff] text-[#17243d]">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4 md:hidden">
@@ -345,16 +340,6 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
             </div>
           </>
         )}
-
-        <footer className="border-t border-[#e4e6f0] bg-white">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-            <div className="space-y-1">
-              <BrandMark compact />
-              <p className="text-xs text-[#6d6e7a]">La energía de tu ciudad, conectada.</p>
-            </div>
-            <p className="text-xs text-[#6d6e7a]">© {new Date().getFullYear()} PlanATi. Hecho con pasión local.</p>
-          </div>
-        </footer>
       </main>
     </>
   );

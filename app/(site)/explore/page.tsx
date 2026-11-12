@@ -2,8 +2,7 @@
 
 import { Map as MapIcon, MapPin, Search, Star } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import Navbar from "@/components/common/Navbar";
+import { use, useEffect, useState } from "react";
 import { ESTABLISHMENT_CATEGORIES, averageRating, searchEstablishments, type PublicEstablishment } from "@/lib/establishments-api";
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -13,10 +12,19 @@ const chipClass = (active: boolean) =>
     active ? "bg-[#4c4cdd] text-white" : "bg-[#eef0ff] text-[#26344d] hover:bg-[#e2e5ff]"
   }`;
 
-export default function ExplorePage() {
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
+type ExploreQuery = { search?: string; category?: string };
+
+// Lee ?search= (buscador del navbar) y ?category= (categorías del inicio). La vista se remonta con `key` cuando
+// cambian, porque navegar a /explore?search=... estando ya en /explore no vuelve a montar la página.
+export default function ExplorePage({ searchParams }: { searchParams: Promise<ExploreQuery> }) {
+  const { search = "", category = "" } = use(searchParams);
+  return <ExploreView key={`${search}|${category}`} initialSearch={search} initialCategory={category} />;
+}
+
+function ExploreView({ initialSearch, initialCategory }: { initialSearch: string; initialCategory: string }) {
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch.trim());
+  const [category, setCategory] = useState(initialCategory);
   const [items, setItems] = useState<PublicEstablishment[] | null>(null);
   const [error, setError] = useState("");
 
@@ -47,7 +55,6 @@ export default function ExplorePage() {
 
   return (
     <>
-      <Navbar />
       <main className="bg-[#f8f9ff] text-[#17243d] lg:grid lg:h-[calc(100vh-4.5rem)] lg:min-h-[36rem] lg:grid-cols-[minmax(26rem,30rem)_1fr]">
         <section className="flex min-h-0 flex-col gap-5 px-5 py-6 lg:overflow-hidden">
           <header className="space-y-4">

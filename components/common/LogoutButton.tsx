@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { logoutUser } from "@/lib/auth-api";
 
 type LogoutButtonProps = {
@@ -13,6 +14,7 @@ type LogoutButtonProps = {
 // los datos del navegador y se regresa a /login.
 export default function LogoutButton({ className = "" }: LogoutButtonProps) {
   const router = useRouter();
+  const { clear } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -23,6 +25,7 @@ export default function LogoutButton({ className = "" }: LogoutButtonProps) {
       // Aunque falle la petición, se sale de la vista para no dejar la sesión a medias.
     } finally {
       sessionStorage.clear();
+      clear();
       router.replace("/login");
     }
   };

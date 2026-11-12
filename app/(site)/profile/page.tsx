@@ -18,8 +18,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import LogoutButton from "@/components/common/LogoutButton";
-import Navbar from "@/components/common/Navbar";
 import PhoneCodePanel from "@/components/common/PhoneCodePanel";
+import { useAuth } from "@/components/providers/AuthProvider";
 import {
   ApiError,
   AUTH_ENDPOINTS,
@@ -45,6 +45,7 @@ const fieldShell =
 
 export default function UserProfilePage() {
   const router = useRouter();
+  const { refresh: refreshSession } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [form, setForm] = useState<ProfileForm | null>(null);
   const [initialForm, setInitialForm] = useState<ProfileForm | null>(null);
@@ -92,6 +93,7 @@ export default function UserProfilePage() {
         picture: url ?? "",
       });
       if (updated) setProfile(updated);
+      void refreshSession();
       setMessage(url ? "Foto de perfil actualizada." : "Foto de perfil eliminada.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "No fue posible guardar la foto.");
@@ -177,6 +179,7 @@ export default function UserProfilePage() {
         nickname: form.nickname.trim() || null,
       });
       if (updated) setProfile(updated);
+      void refreshSession();
 
       const phoneChanged = form.phone !== "" && form.phone !== toPhoneDigits(profile?.phone_number);
       if (phoneChanged) {
@@ -207,7 +210,6 @@ export default function UserProfilePage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-[#f8f9ff] text-[#17243d]">
         <div className="mx-auto max-w-6xl space-y-8 px-5 py-8 sm:px-8">
           <header className="space-y-3">
