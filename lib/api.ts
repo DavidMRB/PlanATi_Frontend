@@ -1,26 +1,11 @@
+// Base de la API. Las peticiones pasan por los helpers de lib/auth-api.ts (cookie de sesión y token CSRF).
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
-export async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    credentials: "include",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
-}
+// Respuesta paginada común de los endpoints nuevos (`Page[T]` en el backend).
+export type Page<T> = {
+  items: T[];
+  total: number;
+  skip: number;
+  limit: number;
+};

@@ -1,25 +1,31 @@
 "use client";
 
-import { ArrowRight, BedDouble, CalendarDays, Coffee, FerrisWheel, Flame, MapPin, Martini, Music, Search, Star, Utensils } from "lucide-react";
+import { ArrowRight, BedDouble, Coffee, FerrisWheel, Flame, Loader2, LocateFixed, MapPin, Martini, Music, Search, ShoppingBag, Star, Utensils } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { averageRating, searchEstablishments, searchNearbyEstablishments, type PublicEstablishment } from "@/lib/establishments-api";
+import EstablishmentCard from "@/components/establishments/EstablishmentCard";
+import AccountDeletedNotice from "@/components/privacy/AccountDeletedNotice";
+import LocationPurposeNote from "@/components/privacy/LocationPurposeNote";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { formatRating, searchEstablishments, searchNearbyEstablishments, type PublicEstablishment } from "@/lib/establishments-api";
 import { formatCop } from "@/lib/format";
 
 const RECOMMENDED_LIMIT = 4;
 const EXPERIENCES_LIMIT = 2;
 const NEARBY_RADIUS_KM = 10;
+const TOP_RATED_LIMIT = 4;
 
 type HomeCategory = { label: string; icon: LucideIcon; href: string; tone: string };
 
 const CATEGORIES: HomeCategory[] = [
-  { label: "Gastronomía", icon: Utensils, href: "/explore?category=Restaurante", tone: "bg-[#5b57e6] text-white" },
-  { label: "Cafés", icon: Coffee, href: "/explore?category=Cafetería", tone: "bg-[#5df0dc] text-[#0b5c52]" },
-  { label: "Bares", icon: Martini, href: "/explore?category=Bar", tone: "bg-[#d6154a] text-white" },
-  { label: "Hoteles", icon: BedDouble, href: "/explore", tone: "bg-[#e5e3fb] text-[#514ddd]" },
-  { label: "Eventos", icon: CalendarDays, href: "/explore", tone: "bg-[#c6f7f0] text-[#0b5c52]" },
-  { label: "Ocio", icon: FerrisWheel, href: "/explore", tone: "bg-[#fde0e3] text-[#d6154a]" },
+  // Cada acceso filtra el directorio por tipo de establecimiento (?type=, B7).
+  { label: "Gastronomía", icon: Utensils, href: "/explore?type=RESTAURANT", tone: "bg-[#5b57e6] text-white" },
+  { label: "Cafés", icon: Coffee, href: "/explore?type=CAFE", tone: "bg-[#5df0dc] text-[#0b5c52]" },
+  { label: "Bares", icon: Martini, href: "/explore?type=BAR", tone: "bg-[#d6154a] text-white" },
+  { label: "Hoteles", icon: BedDouble, href: "/explore?type=HOTEL", tone: "bg-[#e5e3fb] text-[#514ddd]" },
+  { label: "Experiencias", icon: FerrisWheel, href: "/explore?type=EXPERIENCE", tone: "bg-[#fde0e3] text-[#d6154a]" },
+  { label: "Tiendas", icon: ShoppingBag, href: "/explore?type=STORE", tone: "bg-[#c6f7f0] text-[#0b5c52]" },
 ];
 
 const TRENDING = [
@@ -109,9 +115,13 @@ function SectionHeading({ eyebrow, title, action }: { eyebrow: string; title: st
 }
 
 export default function HomePage() {
-  const [recommended, setRecommended] = useState<RecommendedItem[] | null>(null);
+  const [general, setGeneral] = useState<RecommendedItem[] | null>(null);
+  const [nearby, setNearby] = useState<RecommendedItem[] | null>(null);
+  const [topRated, setTopRated] = useState<PublicEstablishment[] | null>(null);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
   const [recommendedError, setRecommendedError] = useState(false);
+  // La ubicación se pide solo con un gesto (botón), salvo que el permiso ya esté concedido.
+  const geo = useGeolocation({ mode: "nearby" });
 
   useEffect(() => {
     let cancelled = false;
@@ -121,7 +131,7 @@ export default function HomePage() {
         if (cancelled) return;
         const establishments = data ?? [];
         setExperiences(comboExperiences(establishments));
-        setRecommended(establishments.slice(0, RECOMMENDED_LIMIT).map((establishment) => ({ establishment, distanceKm: null })));
+        setGeneral(establishments.slice(0, RECOMMENDED_LIMIT).map((establishment) => ({ establishment, distanceKm: null })));
       })
       .catch(() => {
         if (cancelled) return;
@@ -129,36 +139,40 @@ export default function HomePage() {
         setExperiences([]);
       });
 
-    // Con permiso de ubicación se priorizan los establecimientos más cercanos y se muestra la distancia.
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => {
-          searchNearbyEstablishments({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            radiusKm: NEARBY_RADIUS_KM,
-            limit: RECOMMENDED_LIMIT,
-          })
-            .then((data) => {
-              if (cancelled || !data || data.length === 0) return;
-              setRecommended(data.map(({ distance_km, ...establishment }) => ({ establishment, distanceKm: distance_km })));
-              setRecommendedError(false);
-            })
-            .catch(() => {
-              // Se mantiene el listado general.
-            });
-        },
-        () => {
-          // Ubicación denegada o no disponible: se mantiene el listado general.
-        },
-        { timeout: 8000 },
-      );
-    }
+    searchEstablishments({ sort: "rating", limit: TOP_RATED_LIMIT })
+      .then((data) => {
+        if (!cancelled) setTopRated((data ?? []).filter((item) => item.rating_count > 0));
+      })
+      .catch(() => {
+        if (!cancelled) setTopRated([]);
+      });
 
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Con ubicación se priorizan los establecimientos más cercanos y se muestra la distancia.
+  const lat = geo.position?.lat;
+  const lng = geo.position?.lng;
+  useEffect(() => {
+    if (lat === undefined || lng === undefined) return;
+    let cancelled = false;
+    searchNearbyEstablishments({ latitude: lat, longitude: lng, radiusKm: NEARBY_RADIUS_KM, limit: RECOMMENDED_LIMIT })
+      .then((data) => {
+        if (cancelled || !data || data.length === 0) return;
+        setNearby(data.map(({ distance_km, ...establishment }) => ({ establishment, distanceKm: distance_km })));
+      })
+      .catch(() => {
+        // Se mantiene el listado general.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lat, lng]);
+
+  const recommended = nearby ?? general;
+  const showLocationPrompt = !nearby && geo.status !== "granted";
 
   const displayedExperiences: Experience[] =
     experiences && experiences.length > 0
@@ -168,6 +182,7 @@ export default function HomePage() {
   return (
     <>
       <main className="bg-[#f8f9ff] text-[#17243d]">
+        <AccountDeletedNotice />
         <section className="relative flex min-h-[28rem] items-center justify-center bg-[linear-gradient(135deg,#3f3bb5,#6d69ea_55%,#5df0dc)] px-5 py-16 sm:min-h-[32rem]">
           <div className="absolute inset-0 bg-[#17243d]/25" />
           <div className="relative flex w-full max-w-3xl flex-col items-center gap-5 text-center text-white">
@@ -258,7 +273,30 @@ export default function HomePage() {
           </section>
 
           <section className="space-y-6">
-            <SectionHeading eyebrow="Selección local" title="Recomendados en Cúcuta" action={{ href: "/explore", label: "Ver todos" }} />
+            <SectionHeading
+              eyebrow={nearby ? "Cerca de ti" : "Selección local"}
+              title={nearby ? "Recomendados cerca de ti" : "Recomendados en Cúcuta"}
+              action={{ href: nearby ? "/explore?near=1" : "/explore", label: "Ver todos" }}
+            />
+
+            {showLocationPrompt && (
+              <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-[0_4px_16px_rgba(23,36,61,0.05)] sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">¿Quieres ver primero los lugares más cercanos?</p>
+                  <LocationPurposeNote />
+                  {geo.message && <p className="text-xs text-amber-700">{geo.message}</p>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void geo.request()}
+                  disabled={geo.isLocating}
+                  className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#514ddd] px-4 text-sm font-bold text-white hover:bg-[#4542ca] disabled:opacity-60"
+                >
+                  {geo.isLocating ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <LocateFixed aria-hidden="true" className="size-4" />}
+                  Usar mi ubicación
+                </button>
+              </div>
+            )}
 
             {recommendedError && (
               <p className="rounded-xl bg-white p-6 text-center text-sm text-[#6d6e7a]">No fue posible cargar los recomendados en este momento.</p>
@@ -278,45 +316,43 @@ export default function HomePage() {
 
             {recommended && recommended.length > 0 && (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {recommended.map(({ establishment, distanceKm }) => {
-                  const rating = averageRating(establishment);
-                  return (
-                  <Link
-                    key={establishment.id}
-                    href={`/establishments/${establishment.id}`}
-                    className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(23,36,61,0.06)] transition hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <div className="relative h-44 bg-[linear-gradient(135deg,#eef2ff,#e8fbfa)]">
-                      {establishment.banner_image_url && (
-                        // eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2
-                        <img src={establishment.banner_image_url} alt="" className="size-full object-cover" />
-                      )}
-                      {rating !== null && (
-                        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold shadow">
-                          <Star aria-hidden="true" className="size-3 fill-[#f5a524] text-[#f5a524]" />
-                          {rating.toFixed(1)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-1 flex-col gap-2 p-4">
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="rounded-md bg-[#eef0ff] px-2 py-0.5 font-semibold text-[#514ddd]">{establishment.category}</span>
-                        {establishment.price_range && <span className="text-[#6d6e7a]">• {establishment.price_range}</span>}
-                      </div>
-                      <h3 className="truncate text-lg font-bold group-hover:text-[#514ddd]">{establishment.name}</h3>
-                      <p className="line-clamp-2 text-sm text-[#6d6e7a]">{establishment.description}</p>
-                      <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-[#6d6e7a]">
-                        <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-                        <span className="truncate">{establishment.address}</span>
-                        {distanceKm !== null && <span className="ml-auto shrink-0 font-semibold">{distanceKm} km</span>}
-                      </p>
-                    </div>
-                  </Link>
-                  );
-                })}
+                {recommended.map(({ establishment, distanceKm }) => (
+                  <EstablishmentCard key={establishment.id} establishment={establishment} distanceKm={distanceKm} />
+                ))}
               </div>
             )}
           </section>
+
+          {topRated && topRated.length > 0 && (
+            <section className="space-y-6">
+              <SectionHeading eyebrow="Lo que opina la comunidad" title="Mejor puntuados" action={{ href: "/explore?sort=rating", label: "Ver más" }} />
+              <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {topRated.map((establishment, index) => (
+                  <li key={establishment.id}>
+                    <Link
+                      href={`/establishments/${establishment.id}`}
+                      className="group flex items-center gap-4 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] transition hover:-translate-y-0.5 hover:shadow-lg"
+                    >
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef0ff] text-sm font-extrabold text-[#514ddd]">
+                        {index + 1}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-bold group-hover:text-[#514ddd]">{establishment.name}</span>
+                        <span className="block truncate text-xs text-[#6d6e7a]">{establishment.category}</span>
+                        <span className="mt-1 flex items-center gap-1 text-xs font-bold">
+                          <Star aria-hidden="true" className="size-3.5 fill-[#f5a524] text-[#f5a524]" />
+                          {formatRating(establishment.rating_avg)}
+                          <span className="font-medium text-[#6d6e7a]">
+                            ({establishment.rating_count} {establishment.rating_count === 1 ? "reseña" : "reseñas"})
+                          </span>
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
         </div>
       </main>
     </>

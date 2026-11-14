@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  MessageSquare,
   AtSign,
   BadgeCheck,
   Calendar,
@@ -18,6 +19,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import LogoutButton from "@/components/common/LogoutButton";
+import MyReviewsList from "@/components/reviews/MyReviewsList";
+import PrivacySettings from "@/components/privacy/PrivacySettings";
 import PhoneCodePanel from "@/components/common/PhoneCodePanel";
 import { useAuth } from "@/components/providers/AuthProvider";
 import {
@@ -459,6 +462,18 @@ export default function UserProfilePage() {
                   )}
                 </aside>
               </div>
+
+              <section id="mis-resenas" className={`${card} scroll-mt-24 space-y-5`}>
+                <h2 className="flex items-center gap-3 text-xl font-extrabold">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-[#eef0ff] text-[#514ddd]">
+                    <MessageSquare aria-hidden="true" className="size-5" />
+                  </span>
+                  Mis reseñas
+                </h2>
+                <MyReviewsList />
+              </section>
+
+              <PrivacySettings profile={profile} />
             </>
           )}
         </div>

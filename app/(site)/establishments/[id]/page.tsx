@@ -1,14 +1,21 @@
 "use client";
 
-import { ArrowLeft, BookOpen, Clock, ExternalLink, MapPin, Star, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, BookOpen, CalendarPlus, Clock, ExternalLink, MapPin, Navigation, Star, UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
-import { use, useEffect, useState, type ReactNode } from "react";
+import { use, useCallback, useEffect, useState, type ReactNode } from "react";
 import {
+  establishmentTypeLabel,
+  formatRating,
   getEstablishmentDetail,
   type EstablishmentSchedule,
   type PublicEstablishmentDetail,
-  type PublicReview,
 } from "@/lib/establishments-api";
+import FavoriteButton from "@/components/favorites/FavoriteButton";
+import { StaticLocationMap } from "@/components/map/lazy";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { ReportButton } from "@/components/reviews/ReportDialog";
+import ReviewsSection from "@/components/reviews/ReviewsSection";
+import { directionsUrl, mapsSearchUrl, toLatLng } from "@/lib/geo";
 import { formatCop } from "@/lib/format";
 import type { MenuItem } from "@/lib/restaurant-api";
 
@@ -35,26 +42,16 @@ function openStatus(schedules: EstablishmentSchedule[]): { open: boolean; closes
   return { open: false, closesAt: null };
 }
 
-function timeAgo(value: string): string {
-  const days = Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000);
-  if (days <= 0) return "Hoy";
-  if (days === 1) return "Hace 1 día";
-  if (days < 7) return `Hace ${days} días`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `Hace ${weeks} ${weeks === 1 ? "semana" : "semanas"}`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `Hace ${months} ${months === 1 ? "mes" : "meses"}`;
-  return new Date(value).toLocaleDateString("es-CO", { month: "long", year: "numeric" });
-}
-
 export default function EstablishmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const establishmentId = Number(id);
   const isValidId = Number.isInteger(establishmentId) && establishmentId > 0;
 
+  const { user } = useAuth();
+  // "Planear visita" es para cuentas `user` (sin sesión, /plans/new manda al login y vuelve).
+  const canPlan = !user || user.role === "user";
   const [detail, setDetail] = useState<PublicEstablishmentDetail | null>(null);
   const [error, setError] = useState(() => (isValidId ? "" : "Este establecimiento no existe."));
-  const [showAllReviews, setShowAllReviews] = useState(false);
 
   useEffect(() => {
     if (!isValidId) return;
@@ -73,21 +70,33 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
     };
   }, [establishmentId, isValidId]);
 
+  // Tras publicar, editar o borrar una reseña: promedio, distribución y campos viewer_* nuevos.
+  const reloadDetail = useCallback(async () => {
+    try {
+      const data = await getEstablishmentDetail(establishmentId);
+      if (data) setDetail(data);
+    } catch {
+      // Se conserva lo que ya se ve.
+    }
+  }, [establishmentId]);
+
   const schedules = detail?.schedules ?? [];
   const status = openStatus(schedules);
-  const reviews = [...(detail?.reviews ?? [])].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
-  const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 3);
+  const ratingText = formatRating(detail?.rating_avg ?? detail?.average_rating);
+  const ratingCount = detail?.rating_count ?? detail?.reviews_count ?? 0;
+  const typeLabel = establishmentTypeLabel(detail?.establishment_type);
   const gallery = detail?.gallery_images ?? [];
   const extraPhotos = gallery.length > 4 ? gallery.length - 3 : 0;
   const galleryPreview = extraPhotos > 0 ? gallery.slice(0, 3) : gallery.slice(0, 4);
 
-  const mapsUrl = detail
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        detail.latitude && detail.longitude ? `${detail.latitude},${detail.longitude}` : detail.address,
-      )}`
+  // Con coordenadas: "Cómo llegar" con ruta; sin ellas, búsqueda por dirección en Google Maps.
+  const point = detail ? toLatLng(detail.latitude, detail.longitude) : null;
+  const routeUrl = detail
+    ? point
+      ? directionsUrl(point.lat, point.lng, detail.google_place_id)
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(detail.address)}`
     : "#";
+  const openMapUrl = point ? mapsSearchUrl(point.lat, point.lng, detail?.google_place_id) : routeUrl;
 
   return (
     <>
@@ -129,19 +138,30 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                         <span className="rounded-md bg-[#5df0dc] px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-[#0b4a40]">
                           {detail.category}
                         </span>
+                        {typeLabel && typeLabel.toLowerCase() !== detail.category.trim().toLowerCase() && (
+                          <span className="rounded-md bg-[#f3f5fb] px-3 py-1 text-xs font-bold text-[#43506a]">{typeLabel}</span>
+                        )}
                         {detail.price_range && (
                           <span className="rounded-md bg-[#eef0ff] px-3 py-1 text-xs font-extrabold text-[#514ddd]">
                             {detail.price_range}
                           </span>
                         )}
                       </div>
-                      <p className="flex items-center gap-1.5 text-sm font-semibold">
-                        <Star aria-hidden="true" className="size-5 fill-[#d6154a] text-[#d6154a]" />
-                        {detail.average_rating !== null ? detail.average_rating.toFixed(1) : "—"}
-                        <span className="text-[#6d6e7a] underline decoration-[#c9cdf4] underline-offset-4">
-                          ({detail.reviews_count} {detail.reviews_count === 1 ? "reseña" : "reseñas"})
-                        </span>
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <a href="#reviews" className="flex items-center gap-1.5 text-sm font-semibold">
+                          <Star aria-hidden="true" className="size-5 fill-[#d6154a] text-[#d6154a]" />
+                          {ratingText ?? "—"}
+                          <span className="text-[#6d6e7a] underline decoration-[#c9cdf4] underline-offset-4">
+                            ({ratingCount} {ratingCount === 1 ? "reseña" : "reseñas"})
+                          </span>
+                        </a>
+                        <FavoriteButton
+                          establishmentId={detail.id}
+                          name={detail.name}
+                          initial={detail.is_favorite}
+                          className="bg-[#f3f5fb] shadow-none ring-1 ring-[#e4e6f0]"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -161,16 +181,31 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                       {detail.address}
                     </p>
 
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-center gap-2 rounded-2xl bg-[#514ddd] px-6 py-4 text-sm font-bold text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca]"
-                    >
-                      <MapPin aria-hidden="true" className="size-4" />
-                      Consultar ubicación
-                      <ExternalLink aria-hidden="true" className="size-3.5 opacity-70" />
-                    </a>
+                    <div className={`grid gap-3 ${canPlan ? "sm:grid-cols-2" : ""}`}>
+                      {canPlan && (
+                        <Link
+                          href={`/plans/new?establishment=${detail.id}`}
+                          className="flex items-center justify-center gap-2 rounded-2xl bg-[#514ddd] px-6 py-4 text-sm font-bold text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca]"
+                        >
+                          <CalendarPlus aria-hidden="true" className="size-4" />
+                          Planear visita
+                        </Link>
+                      )}
+                      <a
+                        href={routeUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-bold ${
+                          canPlan
+                            ? "bg-[#eef0ff] text-[#514ddd] hover:bg-[#e2e5ff]"
+                            : "bg-[#514ddd] text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca]"
+                        }`}
+                      >
+                        <Navigation aria-hidden="true" className="size-4" />
+                        {point ? "Cómo llegar" : "Consultar ubicación"}
+                        <ExternalLink aria-hidden="true" className="size-3.5 opacity-70" />
+                      </a>
+                    </div>
                   </section>
 
                   <Section title="Sobre el lugar">
@@ -211,36 +246,11 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                     </Section>
                   )}
 
-                  <Section
-                    title="Reseñas"
-                    action={
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-[#6d6e7a]">
-                        <Clock aria-hidden="true" className="size-3.5" />
-                        Próximamente podrás dejar tu reseña
-                      </span>
-                    }
-                  >
-                    {reviews.length === 0 ? (
-                      <p className="rounded-2xl bg-white p-6 text-center text-sm text-[#6d6e7a] shadow-[0_4px_16px_rgba(23,36,61,0.05)]">
-                        Este lugar aún no tiene reseñas.
-                      </p>
-                    ) : (
-                      <ul className="space-y-4">
-                        {visibleReviews.map((review) => (
-                          <ReviewCard key={review.id} review={review} establishmentName={detail.name} />
-                        ))}
-                      </ul>
-                    )}
-                    {reviews.length > 3 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllReviews((value) => !value)}
-                        className="mx-auto mt-5 block text-sm font-bold text-[#26344d] hover:text-[#514ddd]"
-                      >
-                        {showAllReviews ? "Ver menos reseñas" : `Ver las ${reviews.length} reseñas`}
-                      </button>
-                    )}
-                  </Section>
+                  <div id="reviews" className="scroll-mt-24">
+                    <Section title="Reseñas">
+                      <ReviewsSection detail={detail} onChanged={reloadDetail} />
+                    </Section>
+                  </div>
                 </div>
 
                 <aside className="space-y-6 lg:pt-6">
@@ -269,6 +279,7 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                           </p>
                         )}
                         <ul className="space-y-3 pt-1 text-sm">
+                          {/* GUIA #9 TEMA: Matrices (creación, recorrido y operaciones) -> consulta: muestra la fila (tramos) de cada día del horario. */}
                           {DAYS.map((day, index) => {
                             const daySchedules = schedules.filter((schedule) => schedule.day_of_week === index);
                             const isToday = index === todayIndex();
@@ -295,18 +306,45 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
 
                   <section id="ubicacion" className={`${card} space-y-4 p-6`}>
                     <h2 className="text-base font-bold text-[#43506a]">Ubicación</h2>
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex h-44 items-center justify-center rounded-2xl bg-[#e4edff] text-center transition hover:bg-[#d9e5ff]"
-                    >
-                      <span className="px-5">
-                        <MapPin aria-hidden="true" className="mx-auto size-8 text-[#514ddd]" />
-                        <span className="mt-2 block text-xs font-semibold text-[#43506a]">Abrir en el mapa</span>
-                      </span>
-                    </a>
+                    {point ? (
+                      <StaticLocationMap
+                        latitude={point.lat}
+                        longitude={point.lng}
+                        name={detail.name}
+                        establishmentType={detail.establishment_type}
+                        className="h-44"
+                      />
+                    ) : (
+                      <div className="flex h-44 items-center justify-center rounded-2xl bg-[#e4edff] px-5 text-center">
+                        <span>
+                          <MapPin aria-hidden="true" className="mx-auto size-8 text-[#514ddd]" />
+                          <span className="mt-2 block text-xs font-semibold text-[#43506a]">
+                            Este lugar aún no tiene su ubicación en el mapa.
+                          </span>
+                        </span>
+                      </div>
+                    )}
                     <p className="text-sm text-[#43506a]">{detail.address}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={routeUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#514ddd] text-xs font-bold text-white hover:bg-[#4542ca]"
+                      >
+                        <Navigation aria-hidden="true" className="size-3.5" />
+                        Cómo llegar
+                      </a>
+                      <a
+                        href={openMapUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#eef0ff] text-xs font-bold text-[#514ddd] hover:bg-[#e2e5ff]"
+                      >
+                        <ExternalLink aria-hidden="true" className="size-3.5" />
+                        Google Maps
+                      </a>
+                    </div>
                   </section>
 
                   {gallery.length > 0 && (
@@ -335,6 +373,10 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                       </div>
                     </section>
                   )}
+
+                  <div className="flex justify-end">
+                    <ReportButton targetType="ESTABLISHMENT" targetId={detail.id} targetLabel="este lugar" ownerId={detail.owner_id} label="Reportar este lugar" />
+                  </div>
                 </aside>
               </div>
             </div>
@@ -355,55 +397,6 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
       </div>
       {children}
     </section>
-  );
-}
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span className="flex gap-0.5" role="img" aria-label={`${rating} de 5 estrellas`}>
-      {[1, 2, 3, 4, 5].map((value) => (
-        <Star
-          key={value}
-          aria-hidden="true"
-          className={`size-4 ${value <= rating ? "fill-[#d6154a] text-[#d6154a]" : "text-[#d7dcf2]"}`}
-        />
-      ))}
-    </span>
-  );
-}
-
-// La API pública de reseñas no entrega el nombre del autor, solo su user_id.
-function ReviewCard({ review, establishmentName }: { review: PublicReview; establishmentName: string }) {
-  return (
-    <li className="space-y-3 rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-full bg-[#6d69ea] text-xs font-bold text-white">
-            <UtensilsCrossed aria-hidden="true" className="size-4" />
-          </span>
-          <div>
-            <p className="text-sm font-bold">Comensal de PlanATi</p>
-            <p className="text-xs text-[#6d6e7a]">{timeAgo(review.created_at)}</p>
-          </div>
-        </div>
-        <Stars rating={review.rating} />
-      </div>
-      <p className="text-sm leading-7 text-[#43506a]">{review.comment}</p>
-      {review.images && review.images.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto">
-          {review.images.map((image) => (
-            // eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2
-            <img key={image.id} src={image.image_url} alt="" className="size-20 shrink-0 rounded-lg object-cover" />
-          ))}
-        </div>
-      )}
-      {review.reply && (
-        <div className="rounded-xl bg-[#eef0ff] p-4 text-sm">
-          <p className="text-xs font-bold text-[#514ddd]">Respuesta de {establishmentName}</p>
-          <p className="mt-1 text-[#43506a]">{review.reply.comment}</p>
-        </div>
-      )}
-    </li>
   );
 }
 

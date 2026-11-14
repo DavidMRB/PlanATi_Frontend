@@ -19,6 +19,14 @@ import {
 import { useEffect, useState, type FormEvent } from "react";
 import ImageUploadField from "@/components/common/ImageUploadField";
 import LogoutButton from "@/components/common/LogoutButton";
+import LocationPicker from "@/components/map/LocationPicker.tsx";
+import {
+  locationFromProfile,
+  locationPayload,
+  validateLocation,
+  type LocationValue,
+} from "@/components/map/LocationPicker.ts";
+import NotificationsBell from "@/components/common/NotificationsBell";
 import BrandMark from "@/components/ui/BrandMark";
 import { ApiError } from "@/lib/auth-api";
 import {
@@ -92,6 +100,8 @@ export default function RestaurantStatusPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [location, setLocation] = useState<LocationValue | null>(null);
+  const [locationTouched, setLocationTouched] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -103,7 +113,10 @@ export default function RestaurantStatusPage() {
         setRestaurant(status ?? null);
         setProfile(loadedProfile ?? null);
         // La corrección parte de los datos actuales del establecimiento.
-        if (loadedProfile) setForm(formFromProfile(loadedProfile));
+        if (loadedProfile) {
+          setForm(formFromProfile(loadedProfile));
+          setLocation(locationFromProfile(loadedProfile));
+        }
       })
       .catch((loadError: unknown) => {
         if (!cancelled) {
@@ -127,11 +140,19 @@ export default function RestaurantStatusPage() {
     event.preventDefault();
     setError("");
     setMessage("");
+    setLocationTouched(true);
+    // La re-aplicación también exige la ubicación (las solicitudes antiguas pueden no tenerla).
+    const locationError = validateLocation(location);
+    if (locationError) {
+      setError(locationError);
+      return;
+    }
     setIsSubmitting(true);
     try {
       const payload: RestaurantProfileUpdate = {
         ...form,
         phone: form.phone ? `+57${form.phone}` : null,
+        ...locationPayload(location),
       };
       const response = await reapplyRestaurant(payload);
       setMessage(response?.message ?? "Tu solicitud fue enviada a revisión.");
@@ -217,13 +238,53 @@ export default function RestaurantStatusPage() {
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <BrandMark />
-          <LogoutButton />
+          {/* Sin barra superior: la campana avisa cuando el administrador aprueba o rechaza la solicitud. */}
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
+            <LogoutButton />
+          </div>
         </div>
 
         {isLoading && <p className="text-sm text-[#6d6e7a]">Consultando el estado de tu solicitud...</p>}
         {!isLoading && !restaurant && error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
-        {!isLoading && restaurant && (
+        {!isLoading && restaurant?.status === "SUSPENDED" && (
+          <section className={`${card} space-y-5 p-6 sm:p-8`}>
+            <div className="flex items-start gap-4">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <Lock aria-hidden="true" className="size-6" />
+              </span>
+              <div className="space-y-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-600">Establecimiento suspendido</p>
+                <h1 className="text-2xl font-extrabold sm:text-3xl">{restaurant.name}</h1>
+                <p className="text-sm text-[#43506a]">
+                  Un administrador suspendió tu establecimiento: no aparece en el directorio ni en el mapa y tu panel está
+                  bloqueado mientras dure la suspensión.
+                </p>
+              </div>
+            </div>
+            {restaurant.suspension_reason && (
+              <div className="rounded-2xl bg-[#f1f2f6] px-5 py-4 text-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#6d6e7a]">Motivo</p>
+                <p className="mt-1 whitespace-pre-line">{restaurant.suspension_reason}</p>
+              </div>
+            )}
+            <p className="text-sm text-[#43506a]">
+              Si ya corregiste lo indicado o crees que es un error, escribe a soporte de PlanATi. Te avisaremos aquí cuando se
+              reactive.
+            </p>
+            <button
+              type="button"
+              onClick={refreshStatus}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#eef0ff] px-4 py-2.5 text-sm font-bold text-[#514ddd] hover:bg-[#e2e5ff]"
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+              Consultar de nuevo
+            </button>
+          </section>
+        )}
+
+        {!isLoading && restaurant && restaurant.status !== "SUSPENDED" && (
           <>
             {/* Cabecera del establecimiento */}
             <header className={`${card} relative overflow-hidden p-6 sm:p-8`}>
@@ -387,6 +448,22 @@ export default function RestaurantStatusPage() {
                         </div>
                         <span className="text-xs text-[#6d6e7a]">Número móvil colombiano de 10 dígitos.</span>
                       </label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-[#26344d]">Ubicación del establecimiento *</p>
+                      <LocationPicker
+                        value={location}
+                        onChange={(next) => {
+                          setLocation(next);
+                          setLocationTouched(true);
+                        }}
+                        address={form.address}
+                        onUseAddress={(address) => field("address", address)}
+                        previewName={form.name}
+                        establishmentType={profile?.establishment_type}
+                        error={locationTouched ? validateLocation(location) : null}
+                      />
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">

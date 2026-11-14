@@ -24,9 +24,12 @@ const LINKS: NavLink[] = [
     href: "/explore",
     match: (pathname) => pathname.startsWith("/explore") || pathname.startsWith("/establishments"),
   },
-  { label: "Planes" },
-  { label: "Mis Favoritos" },
+  { label: "Planes", href: "/plans", match: (pathname) => pathname.startsWith("/plans") },
+  { label: "Mis Favoritos", href: "/favorites", match: (pathname) => pathname.startsWith("/favorites") },
 ];
+
+// Planes y favoritos son de cuentas `user`: se ocultan a restaurantes y admins (sin sesión, llevan al login).
+const USER_ONLY = new Set(["/plans", "/favorites"]);
 
 // Se monta una sola vez en el layout de las páginas del sitio (app/(site)/layout.tsx); la sesión viene del
 // AuthProvider, así que no consulta la API por su cuenta. El rol solo decide el menú del avatar.
@@ -71,7 +74,7 @@ export default function Navbar() {
         </form>
 
         <nav aria-label="Principal" className="ml-auto hidden items-center gap-1 text-sm font-semibold md:flex">
-          {LINKS.map(({ label, href, match }) => {
+          {LINKS.filter(({ href }) => !(USER_ONLY.has(href ?? "") && user && user.role !== "user")).map(({ label, href, match }) => {
             const isActive = href ? (match ? match(pathname) : pathname === href) : false;
             const className = `rounded-lg px-3 py-2 transition ${
               isActive

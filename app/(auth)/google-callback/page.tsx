@@ -40,10 +40,13 @@ export default function GoogleCallbackPage() {
     window.history.replaceState({}, document.title, window.location.pathname);
 
     if (!code) {
-      setStatus("error");
-      setErrorMessage(
-        "No se proporcionó un código de autenticación válido o el enlace ya fue utilizado.",
-      );
+      // El .then evita llamar setState de forma síncrona dentro del efecto.
+      void Promise.resolve().then(() => {
+        setStatus("error");
+        setErrorMessage(
+          "No se proporcionó un código de autenticación válido o el enlace ya fue utilizado.",
+        );
+      });
       return;
     }
 

@@ -13,6 +13,7 @@ import {
   Info,
   Loader2,
   MessageSquare,
+  ScrollText,
   ShieldCheck,
   Smartphone,
   Timer,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import ConsentCheckboxes, { EMPTY_CONSENT, type ConsentValue } from "@/components/privacy/ConsentCheckboxes";
 import { useAuth } from "@/components/providers/AuthProvider";
 import BrandMark from "@/components/ui/BrandMark";
 import {
@@ -29,6 +31,7 @@ import {
   patchAuthRequest,
   postAuthRequest,
 } from "@/lib/auth-api";
+import { CONSENT_OUTDATED_MESSAGE, acceptConsents, isConsentVersionOutdated } from "@/lib/privacy-api";
 import { IMAGE_ACCEPT, uploadImage, validateImageFile } from "@/lib/uploads";
 
 type ProfileResponse = {
@@ -38,6 +41,7 @@ type ProfileResponse = {
   nickname?: string | null;
   picture?: string | null;
   status?: string;
+  pending_consents?: Array<"PRIVACY_POLICY" | "TERMS">;
   user?: ProfileResponse;
 };
 
@@ -68,6 +72,11 @@ export default function CompleteProfileForm() {
   const [usernameTouched, setUsernameTouched] = useState(false);
   const [imageTouched, setImageTouched] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  // Las cuentas de Google se crean en el callback, antes de ver las casillas: aceptan aquí (B8).
+  // Las de correo ya aceptaron al registrarse y no ven esta sección.
+  const [pendingConsents, setPendingConsents] = useState<Array<"PRIVACY_POLICY" | "TERMS">>([]);
+  const [consent, setConsent] = useState<ConsentValue>(EMPTY_CONSENT);
+  const [consentTouched, setConsentTouched] = useState(false);
 
   const phoneIsValid = /^3[0-9]{9}$/.test(phone);
 
@@ -112,6 +121,7 @@ export default function CompleteProfileForm() {
           setProfileImage(profile.picture);
         }
         setIsPhoneVerified(profile?.phone_verified ?? false);
+        setPendingConsents(profile.pending_consents ?? []);
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           router.replace("/login");
@@ -176,11 +186,24 @@ export default function CompleteProfileForm() {
       return;
     }
 
-    void patchAuthRequest(AUTH_ENDPOINTS.saveProfile, {
-      nickname: username.trim(),
-      phone_number: `+57${phone}`,
-      picture: profileImage,
-    })
+    const needsPrivacy = pendingConsents.includes("PRIVACY_POLICY");
+    const needsTerms = pendingConsents.includes("TERMS");
+    setConsentTouched(true);
+    if ((needsPrivacy && !consent.privacy) || (needsTerms && !consent.terms)) {
+      setFormError("Para terminar debes aceptar la política de datos y los términos.");
+      return;
+    }
+
+    // Primero la autorización (canal GOOGLE_COMPLETE_PROFILE) y después el perfil.
+    void (pendingConsents.length > 0 ? acceptConsents() : Promise.resolve(undefined))
+      .then(() => {
+        setPendingConsents([]);
+        return patchAuthRequest(AUTH_ENDPOINTS.saveProfile, {
+          nickname: username.trim(),
+          phone_number: `+57${phone}`,
+          picture: profileImage,
+        });
+      })
       .then(async () => {
         // El navbar del sitio lee la sesión del AuthProvider: se refresca para que muestre el apodo nuevo.
         await refreshSession();
@@ -192,7 +215,11 @@ export default function CompleteProfileForm() {
           return;
         }
         setFormError(
-          error instanceof Error ? error.message : "No fue posible guardar tu perfil.",
+          isConsentVersionOutdated(error)
+            ? CONSENT_OUTDATED_MESSAGE
+            : error instanceof Error
+              ? error.message
+              : "No fue posible guardar tu perfil.",
         );
       });
   };
@@ -492,6 +519,22 @@ export default function CompleteProfileForm() {
                 Te enviaremos un SMS gratuito con un código de seguridad OTP para garantizar reservas seguras.
               </p>
             </section>
+
+            {/* 4. Autorización de datos (solo cuentas de Google sin aceptar) */}
+            {pendingConsents.length > 0 && (
+              <section className={`${card} space-y-4`}>
+                <h2 className="flex items-center gap-3 text-xl font-extrabold">
+                  <ScrollText aria-hidden="true" className="size-6 text-[#514ddd]" />
+                  4. Autorización de datos
+                </h2>
+                <ConsentCheckboxes
+                  value={consent}
+                  onChange={setConsent}
+                  showError={consentTouched}
+                  documents={{ privacy: pendingConsents.includes("PRIVACY_POLICY"), terms: pendingConsents.includes("TERMS") }}
+                />
+              </section>
+            )}
 
             {formError && (
               <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">

@@ -1,10 +1,9 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import {
-  AUTH_ENDPOINTS,
-  postAuthRequest,
-  type AuthResponse,
-} from "@/lib/auth-api";
+import { EMPTY_CONSENT, consentsAccepted, type ConsentValue } from "@/components/privacy/ConsentCheckboxes";
+import { registerUser } from "@/lib/auth-api";
+import { consentPayload } from "@/lib/legal";
+import { CONSENT_OUTDATED_MESSAGE, isConsentVersionOutdated } from "@/lib/privacy-api";
 
 const registerValidation = {
   name: /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]{1,50}$/,
@@ -27,16 +26,6 @@ function getPasswordRules(value: string) {
   };
 }
 
-function sendRegisterRequest(payload: {
-  full_name: string;
-  nickname: string | null;
-  email: string;
-  phone_number: string;
-  password: string;
-}) {
-  return postAuthRequest<typeof payload, AuthResponse>(AUTH_ENDPOINTS.register, payload);
-}
-
 export function useRegisterForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -50,6 +39,9 @@ export function useRegisterForm() {
     phone: false,
     password: false,
   });
+  // Autorización de datos y términos: sin marcar por defecto (B8).
+  const [consent, setConsent] = useState<ConsentValue>(EMPTY_CONSENT);
+  const [consentTouched, setConsentTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -71,20 +63,22 @@ export function useRegisterForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTouched({ name: true, email: true, phone: true, password: true });
+    setConsentTouched(true);
     setSubmitError("");
 
-    if (!nameIsValid || !emailIsValid || !phoneIsValid || !passwordIsValid) {
+    if (!nameIsValid || !emailIsValid || !phoneIsValid || !passwordIsValid || !consentsAccepted(consent)) {
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await sendRegisterRequest({
+      const response = await registerUser({
         full_name: name,
         nickname: null,
         email,
         phone_number: `+57${phone}`,
         password,
+        ...consentPayload(),
       });
       if (!response) {
         throw new Error("El servidor no devolvió los datos de autenticación.");
@@ -92,7 +86,13 @@ export function useRegisterForm() {
       sessionStorage.setItem("registrationPhone", phone);
       router.push(response.registration_complete ? "/" : "/complete-profile");
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "No fue posible crear la cuenta.");
+      setSubmitError(
+        isConsentVersionOutdated(error)
+          ? CONSENT_OUTDATED_MESSAGE
+          : error instanceof Error
+            ? error.message
+            : "No fue posible crear la cuenta.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -111,6 +111,9 @@ export function useRegisterForm() {
     setPassword,
     touched,
     setTouched,
+    consent,
+    setConsent,
+    consentTouched,
     isSubmitting,
     submitError,
     passwordRules,

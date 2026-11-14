@@ -4,9 +4,16 @@ import { ArrowRight, Check, Eye, EyeOff, ImagePlus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
+import EstablishmentTypePicker from "@/components/establishment-management/EstablishmentTypePicker";
+import LocationPicker from "@/components/map/LocationPicker.tsx";
+import ConsentCheckboxes, { EMPTY_CONSENT, consentsAccepted, type ConsentValue } from "@/components/privacy/ConsentCheckboxes";
+import { consentPayload } from "@/lib/legal";
+import { CONSENT_OUTDATED_MESSAGE, isConsentVersionOutdated } from "@/lib/privacy-api";
+import { locationPayload, validateLocation, type LocationValue } from "@/components/map/LocationPicker.ts";
 import BrandMark from "@/components/ui/BrandMark";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { ApiError } from "@/lib/auth-api";
-import { ESTABLISHMENT_CATEGORIES } from "@/lib/establishments-api";
+import { ESTABLISHMENT_CATEGORIES, type EstablishmentType } from "@/lib/establishments-api";
 import {
   registerRestaurant,
   updateRestaurantProfile,
@@ -171,6 +178,7 @@ function ImagePicker({
 
 export default function RestaurantRegisterForm() {
   const router = useRouter();
+  const { refresh: refreshSession } = useAuth();
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
   const [touched, setTouched] = useState<Partial<Record<keyof FormValues, boolean>>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -178,8 +186,15 @@ export default function RestaurantRegisterForm() {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // Ubicación obligatoria (decisión D3): sin ella el local no aparece en el mapa ni en cercanos.
+  const [location, setLocation] = useState<LocationValue | null>(null);
+  const [locationTouched, setLocationTouched] = useState(false);
+  const [establishmentType, setEstablishmentType] = useState<EstablishmentType>("RESTAURANT");
+  const [consent, setConsent] = useState<ConsentValue>(EMPTY_CONSENT);
+  const [consentTouched, setConsentTouched] = useState(false);
 
   const errors = validate(values);
+  const locationError = validateLocation(location);
   const showError = (field: keyof FormValues) => (touched[field] ? errors[field] : undefined);
 
   const update = (field: keyof FormValues) => (event: { target: { value: string } }) => {
@@ -215,8 +230,10 @@ export default function RestaurantRegisterForm() {
     event.preventDefault();
     setSubmitError("");
     setTouched(Object.fromEntries(Object.keys(EMPTY_VALUES).map((key) => [key, true])));
+    setLocationTouched(true);
+    setConsentTouched(true);
 
-    if (Object.keys(errors).length > 0) {
+    if (Object.keys(errors).length > 0 || locationError || !location || !consentsAccepted(consent)) {
       return;
     }
 
@@ -230,6 +247,11 @@ export default function RestaurantRegisterForm() {
       establishment_phone: `+57${values.establishmentPhone.replace(/\s/g, "")}`,
       contact_email: values.contactEmail.trim(),
       description: values.description.trim(),
+      establishment_type: establishmentType,
+      ...consentPayload(),
+      ...locationPayload(location),
+      latitude: location.latitude,
+      longitude: location.longitude,
     };
 
     setIsSubmitting(true);
@@ -237,9 +259,13 @@ export default function RestaurantRegisterForm() {
       // El alta devuelve la cookie de sesión, así que las imágenes se suben ahora.
       await registerRestaurant(payload);
       await saveRegistrationImages();
+      // Sesión cargada en AuthProvider antes de navegar (el layout del restaurante redirige a /login con user === null).
+      await refreshSession();
       router.push("/restaurant/status");
     } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
+      if (isConsentVersionOutdated(error)) {
+        setSubmitError(CONSENT_OUTDATED_MESSAGE);
+      } else if (error instanceof ApiError && error.status === 409) {
         setSubmitError("Este correo de cuenta ya se encuentra registrado.");
       } else {
         setSubmitError(error instanceof Error ? error.message : "No fue posible enviar la solicitud.");
@@ -260,9 +286,10 @@ export default function RestaurantRegisterForm() {
         </div>
 
         <header className="space-y-2 pb-6">
-          <h1 className="text-2xl font-bold">Registra tu restaurante</h1>
+          <h1 className="text-2xl font-bold">Registra tu establecimiento</h1>
           <p className="text-sm text-[#6d6e7a]">
-            Tu solicitud será revisada por un administrador antes de publicar tu establecimiento. Puedes
+            Restaurantes, cafés, bares, hoteles, experiencias o tiendas: tu solicitud será revisada por un
+            administrador antes de publicar tu establecimiento. Puedes
             añadir el logo y la portada ahora; las fotos del lugar y del menú las gestionarás desde tu panel
             una vez aprobado.
           </p>
@@ -331,6 +358,10 @@ export default function RestaurantRegisterForm() {
             <legend className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-[#9295a4]">
               Datos del establecimiento
             </legend>
+            <div className="space-y-1.5 sm:col-span-2">
+              <span className="text-sm font-semibold text-[#26344d]">Tipo de establecimiento</span>
+              <EstablishmentTypePicker value={establishmentType} onChange={setEstablishmentType} />
+            </div>
             <Field label="Nombre del establecimiento" error={showError("establishmentName")}>
               <input
                 className={inputClass}
@@ -346,7 +377,7 @@ export default function RestaurantRegisterForm() {
                 value={values.category}
                 onChange={update("category")}
                 onBlur={touch("category")}
-                placeholder="Ej. Restaurante"
+                placeholder="Ej. Parrilla, Cafetería, Hostal"
               />
               <datalist id="restaurant-categories">
                 {ESTABLISHMENT_CATEGORIES.map((category) => (
@@ -400,6 +431,29 @@ export default function RestaurantRegisterForm() {
             </Field>
           </fieldset>
 
+          <fieldset className="space-y-3">
+            <legend className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-[#9295a4]">
+              Ubicación del establecimiento
+            </legend>
+            <p className="text-sm text-[#6d6e7a]">
+              Marca el punto exacto de tu local: así aparecerá en el mapa y en las búsquedas de lugares cercanos.
+            </p>
+            <LocationPicker
+              value={location}
+              onChange={(next) => {
+                setLocation(next);
+                setLocationTouched(true);
+              }}
+              address={values.address}
+              onUseAddress={(address) => {
+                setValues((current) => ({ ...current, address }));
+                setTouched((current) => ({ ...current, address: true }));
+              }}
+              previewName={values.establishmentName.trim()}
+              error={locationTouched ? locationError : null}
+            />
+          </fieldset>
+
           <fieldset className="grid gap-5 sm:grid-cols-2">
             <legend className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-[#9295a4]">
               Imágenes (opcional)
@@ -407,6 +461,8 @@ export default function RestaurantRegisterForm() {
             <ImagePicker label="Logo" file={logoFile} onChange={setLogoFile} />
             <ImagePicker label="Portada" file={bannerFile} onChange={setBannerFile} />
           </fieldset>
+
+          <ConsentCheckboxes value={consent} onChange={setConsent} showError={consentTouched} />
 
           {submitError && (
             <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
