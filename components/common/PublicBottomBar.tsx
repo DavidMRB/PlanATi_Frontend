@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Heart, House, UserRound } from "lucide-react";
+import { CalendarDays, Compass, Heart, House, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import BottomTabBar, { type TabItem } from "@/components/common/BottomTabBar";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -19,13 +19,21 @@ export default function PublicBottomBar() {
 
   // En móvil el detalle del establecimiento tiene su propia barra de acciones.
   if (pathname.startsWith("/establishments/")) return null;
+  // El asistente de planes usa la barra inferior para el total y el botón de avanzar.
+  if (pathname === "/plans/new" || /^\/plans\/[^/]+\/edit$/.test(pathname)) return null;
 
   const profile = (user && PROFILE_BY_ROLE[user.role]) || { href: "/login", match: (path: string) => path.startsWith("/login") };
 
   const items: TabItem[] = [
     { label: "Inicio", icon: House, href: "/", match: (path) => path === "/" },
     { label: "Explorar", icon: Compass, href: "/explore", match: (path) => path.startsWith("/explore") },
-    { label: "Favoritos", icon: Heart },
+    // Planes y favoritos son de cuentas `user`; sin sesión, el enlace lleva al login.
+    ...(!user || user.role === "user"
+      ? [
+          { label: "Planes", icon: CalendarDays, href: "/plans", match: (path: string) => path.startsWith("/plans") },
+          { label: "Favoritos", icon: Heart, href: "/favorites", match: (path: string) => path.startsWith("/favorites") },
+        ]
+      : []),
     { label: "Perfil", icon: UserRound, href: profile.href, match: profile.match },
   ];
 

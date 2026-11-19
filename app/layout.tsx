@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import type { Viewport } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import { FavoritesProvider } from "@/components/favorites/FavoritesProvider";
 import Footer from "@/components/layout/Footer";
+import ConsentGate from "@/components/privacy/ConsentGate";
+import { NotificationsProvider } from "@/components/notifications/NotificationsProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
@@ -36,8 +39,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-full flex flex-col">
         <ServiceWorkerRegistration />
         <AuthProvider>
-          <div className="flex-1">{children}</div>
-          <Footer />
+          <NotificationsProvider>
+            <FavoritesProvider>
+              <div className="flex-1">{children}</div>
+              <Footer />
+              <ConsentGate />
+            </FavoritesProvider>
+          </NotificationsProvider>
         </AuthProvider>
       </body>
     </html>

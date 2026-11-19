@@ -5,12 +5,15 @@ import { useMemo, useState, type FormEvent } from "react";
 import ImageUploadField from "@/components/common/ImageUploadField";
 import Modal from "@/components/ui/Modal";
 import { formatCop } from "@/lib/format";
-import { createCombo, updateCombo, type ComboPayload, type MenuItem } from "@/lib/restaurant-api";
+import type { EstablishmentManagementApi } from "@/lib/management-api";
+import type { ComboPayload, MenuItem } from "@/lib/restaurant-api";
 
 type ComboMode = "UNIT" | "COMPOSED";
 type SelectedItem = { product_id: number; quantity: number };
 
 type ComboModalProps = {
+  // Panel del restaurante o admin gestionando el local.
+  api: EstablishmentManagementApi;
   combo: MenuItem | null;
   products: MenuItem[];
   onClose: () => void;
@@ -22,7 +25,7 @@ const inputClass =
 
 // Modalidad 1 (UNIT): combo independiente, sin productos asociados.
 // Modalidad 2 (COMPOSED): combo formado por productos existentes del restaurante.
-export default function ComboModal({ combo, products, onClose, onSaved }: ComboModalProps) {
+export default function ComboModal({ api, combo, products, onClose, onSaved }: ComboModalProps) {
   const isEditing = combo !== null;
   const [mode, setMode] = useState<ComboMode>(combo && combo.combo_items.length > 0 ? "COMPOSED" : "UNIT");
   const [name, setName] = useState(combo?.name ?? "");
@@ -88,9 +91,9 @@ export default function ComboModal({ combo, products, onClose, onSaved }: ComboM
     setIsSaving(true);
     try {
       if (combo) {
-        await updateCombo(combo.id, payload);
+        await api.updateCombo(combo.id, payload);
       } else {
-        await createCombo(payload);
+        await api.createCombo(payload);
       }
       onSaved();
     } catch (saveError) {
@@ -130,7 +133,7 @@ export default function ComboModal({ combo, products, onClose, onSaved }: ComboM
             : "Elige productos ya creados en tu carta y la cantidad de cada uno."}
         </p>
 
-        <ImageUploadField label="Imagen" folder="products" value={imageUrl} onChange={setImageUrl} />
+        <ImageUploadField label="Imagen" folder="products" value={imageUrl} onChange={setImageUrl} createUploadUrl={api.createUploadUrl} />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5">

@@ -1,32 +1,40 @@
 "use client";
 
-import { ClipboardCheck, LayoutDashboard, MessageSquare, Settings, Store, Users, type LucideIcon } from "lucide-react";
+import { ClipboardCheck, Flag, History, LayoutDashboard, MessageSquare, Settings, Store, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import AreaTopBar from "@/components/common/AreaTopBar";
 import BottomTabBar, { type TabItem } from "@/components/common/BottomTabBar";
 import LogoutButton from "@/components/common/LogoutButton";
 import { useAuth } from "@/components/providers/AuthProvider";
 import BrandMark from "@/components/ui/BrandMark";
 import PlaceholderLink from "@/components/ui/PlaceholderLink";
+import { ADMIN_COUNTS_CHANGED, getAdminDashboard } from "@/lib/admin-api";
+
+const REPORTS_PATH = "/admin/reports";
+const PENDING_PATH = "/admin/establishments?status=PENDING";
 
 // Sin href el ítem es un PlaceholderLink: la sección del diseño todavía no existe.
-const NAV_ITEMS: Array<{ href?: string; label: string; icon: LucideIcon }> = [
+// `count` indica qué contador del dashboard se muestra junto al ítem.
+const NAV_ITEMS: Array<{ href?: string; label: string; icon: LucideIcon; count?: "pending" | "reports" }> = [
   { href: "/admin/dashboard", label: "Resumen", icon: LayoutDashboard },
   { href: "/admin/establishments", label: "Establecimientos", icon: Store },
-  { label: "Solicitudes", icon: ClipboardCheck },
-  { label: "Usuarios", icon: Users },
-  { label: "Reseñas", icon: MessageSquare },
+  { href: PENDING_PATH, label: "Solicitudes", icon: ClipboardCheck, count: "pending" },
+  { href: "/admin/users", label: "Usuarios", icon: Users },
+  { href: "/admin/reviews", label: "Reseñas", icon: MessageSquare },
+  { href: REPORTS_PATH, label: "Reportes", icon: Flag, count: "reports" },
+  { href: "/admin/activity", label: "Actividad", icon: History },
   { label: "Configuración", icon: Settings },
 ];
 
 // Barra inferior móvil (la barra lateral solo se ve desde md).
 const TAB_ITEMS: TabItem[] = [
   { label: "Resumen", icon: LayoutDashboard, href: "/admin/dashboard" },
-  { label: "Solicitudes", icon: ClipboardCheck },
   { label: "Locales", icon: Store, href: "/admin/establishments" },
-  { label: "Ajustes", icon: Settings },
+  { label: "Usuarios", icon: Users, href: "/admin/users" },
+  { label: "Reseñas", icon: MessageSquare, href: "/admin/reviews" },
+  { label: "Reportes", icon: Flag, href: REPORTS_PATH },
 ];
 
 // Consola administrativa: solo para usuarios con rol "admin".
@@ -34,8 +42,29 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   // La sesión viene del AuthProvider (una sola consulta para toda la app).
-  const { user, isLoading, refresh } = useAuth();
+  const { user, isLoading, refresh, suspended } = useAuth();
   const isAllowed = user?.role === "admin";
+  // Contadores del menú (solicitudes pendientes y reportes abiertos): se recargan al navegar y cuando una
+  // página avisa con ADMIN_COUNTS_CHANGED.
+  const [counts, setCounts] = useState({ pending: 0, reports: 0 });
+
+  useEffect(() => {
+    if (!isAllowed) return;
+    let cancelled = false;
+    const load = () => {
+      getAdminDashboard()
+        .then((data) => {
+          if (!cancelled && data) setCounts({ pending: data.pending_establishments, reports: data.open_reports });
+        })
+        .catch(() => undefined);
+    };
+    load();
+    window.addEventListener(ADMIN_COUNTS_CHANGED, load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(ADMIN_COUNTS_CHANGED, load);
+    };
+  }, [isAllowed, pathname]);
 
   // Revalida la sesión contra la API al entrar y en cada cambio de ruta, como hacía el guard original:
   // si la cookie venció (401) el contexto pasa a null y el efecto de abajo redirige a /login.
@@ -56,7 +85,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, [pathname, isLoading, refresh]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || suspended) return;
     if (!user) {
       router.replace("/login");
       return;
@@ -65,7 +94,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       window.alert("No tienes permisos para acceder a la consola administrativa.");
       router.replace("/");
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, suspended]);
 
   if (!isAllowed) {
     return (
@@ -75,7 +104,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const currentLabel = NAV_ITEMS.find((item) => item.href && pathname.startsWith(item.href))?.label ?? "Resumen";
+  const currentLabel = NAV_ITEMS.find((item) => item.href && !item.count && pathname.startsWith(item.href))?.label ??
+    (pathname.startsWith(REPORTS_PATH) ? "Reportes" : "Resumen");
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f9ff] text-[#17243d] md:flex-row">
@@ -87,15 +117,25 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav aria-label="Administración" className="mt-6 flex flex-col gap-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const isActive = href ? pathname.startsWith(href) : false;
+          {NAV_ITEMS.map(({ href, label, icon: Icon, count: countKey }) => {
+            // "Solicitudes" es un filtro de Establecimientos: no se marca como activo por su cuenta.
+            const isActive = href && !href.includes("?") ? pathname.startsWith(href) : false;
+            const count = countKey ? counts[countKey] : 0;
             const className = `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
               isActive ? "bg-[#514ddd] text-white shadow-[0_6px_16px_rgba(81,77,221,0.25)]" : "text-[#43506a] hover:bg-[#f3f5fb]"
             }`;
             const content = (
               <>
-                <Icon aria-hidden="true" className="size-4" />
-                {label}
+                <Icon aria-hidden="true" className="size-4 shrink-0" />
+                <span className="flex-1">{label}</span>
+                {count > 0 && (
+                  <span
+                    aria-label={`${count} ${countKey === "reports" ? "abiertos" : "pendientes"}`}
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${isActive ? "bg-white/25 text-white" : "bg-[#d6154a] text-white"}`}
+                  >
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
               </>
             );
             return href ? (

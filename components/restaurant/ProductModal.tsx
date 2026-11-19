@@ -3,9 +3,12 @@
 import { useState, type FormEvent } from "react";
 import ImageUploadField from "@/components/common/ImageUploadField";
 import Modal from "@/components/ui/Modal";
-import { createProduct, updateProduct, type MenuItem, type ProductPayload } from "@/lib/restaurant-api";
+import type { EstablishmentManagementApi } from "@/lib/management-api";
+import type { MenuItem, ProductPayload } from "@/lib/restaurant-api";
 
 type ProductModalProps = {
+  // Panel del restaurante o admin gestionando el local.
+  api: EstablishmentManagementApi;
   product: MenuItem | null;
   onClose: () => void;
   onSaved: () => void;
@@ -15,7 +18,7 @@ const inputClass =
   "h-11 w-full rounded-xl bg-[#eef2ff] px-4 text-sm text-[#17243d] outline-none ring-2 ring-transparent transition focus:ring-[#6868e8]/40";
 
 // Alta y edición de productos individuales. Un producto se crea siempre con is_combo = false.
-export default function ProductModal({ product, onClose, onSaved }: ProductModalProps) {
+export default function ProductModal({ api, product, onClose, onSaved }: ProductModalProps) {
   const isEditing = product !== null;
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
@@ -47,9 +50,9 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
     setIsSaving(true);
     try {
       if (product) {
-        await updateProduct(product.id, payload);
+        await api.updateProduct(product.id, payload);
       } else {
-        await createProduct(payload);
+        await api.createProduct(payload);
       }
       onSaved();
     } catch (saveError) {
@@ -62,7 +65,7 @@ export default function ProductModal({ product, onClose, onSaved }: ProductModal
   return (
     <Modal title={isEditing ? "Editar producto" : "Nuevo producto"} onClose={onClose} widthClass="max-w-xl">
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-        <ImageUploadField label="Imagen" folder="products" value={imageUrl} onChange={setImageUrl} />
+        <ImageUploadField label="Imagen" folder="products" value={imageUrl} onChange={setImageUrl} createUploadUrl={api.createUploadUrl} />
 
         <label className="block space-y-1.5">
           <span className="text-sm font-semibold text-[#26344d]">Nombre</span>

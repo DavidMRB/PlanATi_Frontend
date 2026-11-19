@@ -1,12 +1,18 @@
 import { authEndpoint, postAuthRequest } from "./auth-api";
 import { createUploadUrl, type UploadFolder, type UploadUrl } from "./restaurant-api";
 
-// "avatars" es la foto de perfil del usuario: usa su propio endpoint porque no exige rol de restaurante.
-export type ImageFolder = UploadFolder | "avatars";
+// "avatars" es la foto de perfil del usuario y "reviews" las fotos de una reseña: usan sus propios
+// endpoints porque no exigen rol de restaurante.
+export type ImageFolder = UploadFolder | "avatars" | "reviews";
 
-function createAvatarUploadUrl(fileExtension: string) {
+const OWN_UPLOAD_ENDPOINTS = {
+  avatars: "/users/me/upload-url",
+  reviews: "/reviews/upload-url",
+} as const;
+
+function createOwnUploadUrl(folder: keyof typeof OWN_UPLOAD_ENDPOINTS, fileExtension: string) {
   const query = new URLSearchParams({ file_extension: fileExtension });
-  return postAuthRequest<undefined, UploadUrl>(authEndpoint(`/users/me/upload-url?${query}`), undefined);
+  return postAuthRequest<undefined, UploadUrl>(authEndpoint(`${OWN_UPLOAD_ENDPOINTS[folder]}?${query}`), undefined);
 }
 
 // El backend espera la extensión con punto (".png") y valida contra esta lista.
@@ -30,19 +36,27 @@ export function validateImageFile(file: File): string | null {
   return null;
 }
 
+// Pide la URL prefirmada de una carpeta de establecimiento. Por defecto, la del propio restaurante
+// (/restaurant/upload-url); el admin pasa la de /admin/establishments/{id}/upload-url.
+export type UploadUrlFactory = (folder: UploadFolder, fileExtension: string) => Promise<UploadUrl | undefined>;
+
 // Sube el archivo directo a R2 con una URL prefirmada y devuelve la URL pública.
-// Requiere sesión; las carpetas de restaurante además exigen rol restaurante.
+// Requiere sesión; las carpetas de restaurante además exigen rol restaurante (o admin con `createUrl`).
 export async function uploadImage(
   folder: ImageFolder,
   file: File,
   onProgress?: (percent: number) => void,
+  createUrl: UploadUrlFactory = createUploadUrl,
 ): Promise<string> {
   const extension = ACCEPTED_TYPES[file.type];
   if (!extension) {
     throw new Error("Formato no permitido. Usa JPG, PNG o WEBP.");
   }
 
-  const upload = folder === "avatars" ? await createAvatarUploadUrl(extension) : await createUploadUrl(folder, extension);
+  const upload =
+    folder === "avatars" || folder === "reviews"
+      ? await createOwnUploadUrl(folder, extension)
+      : await createUrl(folder, extension);
   if (!upload) {
     throw new Error("No se recibió la URL de subida.");
   }

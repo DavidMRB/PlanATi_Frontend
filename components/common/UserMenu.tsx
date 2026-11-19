@@ -13,7 +13,7 @@ export type MenuLink = { href: string; label: string };
 // Enlace al área de cada rol; se muestra en el menú del avatar del sitio público.
 const ROLE_LINK: Record<string, MenuLink> = {
   admin: { href: "/admin/dashboard", label: "Panel admin" },
-  restaurant: { href: "/restaurant/dashboard", label: "Mi restaurante" },
+  restaurant: { href: "/restaurant/dashboard", label: "Mi establecimiento" },
   user: { href: "/profile", label: "Mi perfil" },
 };
 

@@ -3,9 +3,11 @@
 import {
   ArrowRight,
   BadgeCheck,
+  Clock,
   Eye,
   Images,
   MapPin,
+  MessageSquareReply,
   Package,
   Phone,
   Plus,
@@ -17,18 +19,20 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { getEstablishmentDetail } from "@/lib/establishments-api";
 import { ESTABLISHMENT_STATUS_CLASS, ESTABLISHMENT_STATUS_LABEL, formatCop } from "@/lib/format";
 import {
   getRestaurantProfile,
+  getRestaurantReviewSummary,
+  getSchedules,
   listProducts,
   listRestaurantImages,
   type EstablishmentImage,
   type MenuItem,
   type RestaurantProfile,
+  type RestaurantReviewSummary,
 } from "@/lib/restaurant-api";
 
-type Rating = { average: number | null; count: number };
+type Alert = { href: string; icon: LucideIcon; tone: string; title: string; description: string; action: string };
 
 type ModuleCard = {
   href: string;
@@ -52,20 +56,20 @@ export default function RestaurantDashboardPage() {
   const [profile, setProfile] = useState<RestaurantProfile | null>(null);
   const [images, setImages] = useState<EstablishmentImage[] | null>(null);
   const [catalog, setCatalog] = useState<MenuItem[] | null>(null);
-  const [rating, setRating] = useState<Rating | null>(null);
+  const [summary, setSummary] = useState<RestaurantReviewSummary | null>(null);
+  // null mientras carga o si falló: el aviso de "sin horarios" solo sale con la respuesta real.
+  const [scheduleCount, setScheduleCount] = useState<number | null>(null);
 
   useEffect(() => {
     getRestaurantProfile()
-      .then((data) => {
-        setProfile(data ?? null);
-        if (!data) return;
-        getEstablishmentDetail(data.id)
-          .then((detail) => {
-            if (detail) setRating({ average: detail.average_rating, count: detail.reviews_count });
-          })
-          .catch(() => setRating(null));
-      })
+      .then((data) => setProfile(data ?? null))
       .catch(() => setProfile(null));
+    getRestaurantReviewSummary()
+      .then((data) => setSummary(data ?? null))
+      .catch(() => setSummary(null));
+    getSchedules()
+      .then((data) => setScheduleCount(data?.length ?? 0))
+      .catch(() => setScheduleCount(null));
 
     listRestaurantImages("GALLERY")
       .then((data) => setImages(data ?? []))
@@ -106,11 +110,50 @@ export default function RestaurantDashboardPage() {
     {
       icon: Star,
       tone: "bg-[#eef0ff] text-[#514ddd]",
-      value: rating?.average != null ? rating.average.toFixed(1) : "—",
+      value: summary?.rating_avg != null ? summary.rating_avg.toFixed(1) : "—",
       label: "Valoración promedio",
-      hint: rating ? `Basado en ${rating.count} ${rating.count === 1 ? "reseña" : "reseñas"}` : "Reseñas de tus clientes",
+      hint: summary
+        ? summary.rating_count === 0
+          ? "Aún sin reseñas"
+          : `${summary.rating_count} ${summary.rating_count === 1 ? "reseña" : "reseñas"}${
+              summary.category_rank && profile ? ` • #${summary.category_rank} en ${profile.category}` : ""
+            }`
+        : "Reseñas de tus clientes",
     },
   ];
+
+  const alerts: Alert[] = [];
+  if (summary && summary.unanswered_count > 0) {
+    const n = summary.unanswered_count;
+    alerts.push({
+      href: "/restaurant/reviews",
+      icon: MessageSquareReply,
+      tone: "bg-[#fde0e3] text-[#d6154a]",
+      title: `Tienes ${n} ${n === 1 ? "reseña" : "reseñas"} sin responder`,
+      description: "Responder a tiempo mejora la confianza de quienes te visitan.",
+      action: "Responder",
+    });
+  }
+  if (scheduleCount === 0) {
+    alerts.push({
+      href: "/restaurant/schedules",
+      icon: Clock,
+      tone: "bg-[#fff4d6] text-[#8a5a00]",
+      title: "Sin horarios",
+      description: "Sin horarios, los usuarios no podrán planear visitas con validación de apertura.",
+      action: "Configurar horarios",
+    });
+  }
+  if (profile && (profile.latitude === null || profile.longitude === null)) {
+    alerts.push({
+      href: "/restaurant/profile",
+      icon: MapPin,
+      tone: "bg-[#eef0ff] text-[#514ddd]",
+      title: "Tu local no tiene ubicación",
+      description: "Sin ubicación no apareces en el mapa ni en “Cerca de mí”.",
+      action: "Ubicar mi local",
+    });
+  }
 
   const modules: ModuleCard[] = [
     {
@@ -265,7 +308,7 @@ export default function RestaurantDashboardPage() {
           <h1 className="text-3xl font-extrabold sm:text-4xl">
             {managerFirstName ? `¡Hola de nuevo, ${managerFirstName}!` : "Bienvenido"}
           </h1>
-          <p className="text-2xl font-bold text-[#514ddd]">{profile?.name ?? "Tu restaurante"}</p>
+          <p className="text-2xl font-bold text-[#514ddd]">{profile?.name ?? "Tu establecimiento"}</p>
           <div className="flex flex-wrap items-center gap-2">
             {profile && (
               <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${ESTABLISHMENT_STATUS_CLASS[profile.status]}`}>
@@ -283,6 +326,29 @@ export default function RestaurantDashboardPage() {
           <p className="max-w-xl text-base text-[#6d6e7a]">Desde aquí administras la información que verán tus clientes.</p>
         </div>
       </header>
+
+      {alerts.length > 0 && (
+        <ul aria-label="Pendientes" className="grid gap-3 lg:grid-cols-2">
+          {alerts.map(({ href, icon: Icon, tone, title, description, action }) => (
+            <li key={href} className={`${card} flex items-center gap-4 p-4 sm:p-5`}>
+              <span className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+                <Icon aria-hidden="true" className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold">{title}</p>
+                <p className="text-xs text-[#6d6e7a]">{description}</p>
+              </div>
+              <Link
+                href={href}
+                className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#eef0ff] px-3 py-2 text-xs font-bold text-[#514ddd] hover:bg-[#e2e5ff]"
+              >
+                {action}
+                <ArrowRight aria-hidden="true" className="size-3.5" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {stats.map(({ icon: Icon, tone, value, label, hint }) => (

@@ -1,4 +1,5 @@
 import { Globe, Share2 } from "lucide-react";
+import Link from "next/link";
 import PlaceholderLink from "@/components/ui/PlaceholderLink";
 
 // Pie de página único para todas las vistas (se monta en app/layout.tsx). Diseño tomado de Home (escritorio).
@@ -14,7 +15,16 @@ export default function Footer() {
               <p className="text-xs text-[#43506a]">La energía de tu ciudad, conectada.</p>
             </div>
 
-            <div className="flex items-center gap-8 text-sm font-semibold">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-sm font-semibold">
+              <Link href="/legal/privacy" className="hover:text-[#514ddd]">
+                Privacidad
+              </Link>
+              <Link href="/legal/terms" className="hover:text-[#514ddd]">
+                Términos
+              </Link>
+              <Link href="/legal/community-guidelines" className="hover:text-[#514ddd]">
+                Normas de la comunidad
+              </Link>
               <PlaceholderLink className="hover:text-[#514ddd]">Nosotros</PlaceholderLink>
               <PlaceholderLink className="hover:text-[#514ddd]">Contacto</PlaceholderLink>
               <span className="flex items-center gap-4 text-[#43506a]">

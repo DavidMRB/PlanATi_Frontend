@@ -2,7 +2,7 @@
 
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
-import { IMAGE_ACCEPT, uploadImage, validateImageFile, type ImageFolder } from "@/lib/uploads";
+import { IMAGE_ACCEPT, uploadImage, validateImageFile, type ImageFolder, type UploadUrlFactory } from "@/lib/uploads";
 
 type ImageUploadFieldProps = {
   label: string;
@@ -11,6 +11,8 @@ type ImageUploadFieldProps = {
   onChange: (publicUrl: string | null) => void;
   heightClass?: string;
   circle?: boolean;
+  // Quién firma la subida (el admin gestionando un local usa la suya).
+  createUploadUrl?: UploadUrlFactory;
 };
 
 export default function ImageUploadField({
@@ -20,6 +22,7 @@ export default function ImageUploadField({
   onChange,
   heightClass = "h-40",
   circle = false,
+  createUploadUrl,
 }: ImageUploadFieldProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -46,7 +49,7 @@ export default function ImageUploadField({
     setProgress(0);
 
     try {
-      const publicUrl = await uploadImage(folder, file, setProgress);
+      const publicUrl = await uploadImage(folder, file, setProgress, createUploadUrl);
       setPreviewUrl(null);
       onChange(publicUrl);
     } catch (uploadError) {

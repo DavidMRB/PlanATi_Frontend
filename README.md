@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PlanATi — Frontend
 
-## Getting Started
+Aplicación web de PlanATi, una plataforma para descubrir establecimientos gastronómicos de Cúcuta (búsqueda, mapa, reseñas, planes y paneles para establecimientos y administradores). Está hecha con [Next.js](https://nextjs.org) 16, React 19 y Tailwind CSS 4.
 
-First, run the development server:
+Para la descripción general del proyecto y la instalación completa (base de datos, backend y frontend) consulta el [README de la raíz](../README.md).
+
+## Inicio rápido
+
+Requiere el backend corriendo en `http://localhost:8000` (ver [`../Backend/README.md`](../Backend/README.md)).
 
 ```bash
+npm install
+copy .env.example .env.local    # Linux/Mac: cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables de entorno (`.env.local`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Descripción |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | URL de la API (`http://localhost:8000/api/v1`). |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | API key de Google Maps (`AIza…`). Sin ella los mapas muestran un aviso. |
+| `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | ID del mapa (`DEMO_MAP_ID` en desarrollo). |
+| `NEXT_PUBLIC_DEFAULT_MAP_CENTER`, `NEXT_PUBLIC_DEFAULT_MAP_ZOOM` | Vista inicial del mapa (Cúcuta). |
+| `NEXT_PUBLIC_SERVICE_AREA_BOUNDS` | `sur,oeste,norte,este`; igual que `SERVICE_AREA_BOUNDS` del backend. |
 
-## Learn More
+Las variables `NEXT_PUBLIC_*` son públicas (se incrustan en el JavaScript del navegador): no guardes secretos en ellas. Reinicia `npm run dev` tras cambiarlas.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Comando | Acción |
+|---|---|
+| `npm run dev` | Servidor de desarrollo. |
+| `npm run build` | Compilación de producción. |
+| `npm start` | Sirve la compilación de producción. |
+| `npm run lint` | ESLint. |
+| `npx tsc --noEmit` | Comprobación de tipos. |

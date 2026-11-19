@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Images, LayoutDashboard, LifeBuoy, Package, Store, UtensilsCrossed, type LucideIcon } from "lucide-react";
+import { Clock, Images, LayoutDashboard, LifeBuoy, MessageSquare, Package, Store, UtensilsCrossed, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -10,12 +10,19 @@ import BrandMark from "@/components/ui/BrandMark";
 import LogoutButton from "@/components/common/LogoutButton";
 import { useAuth } from "@/components/providers/AuthProvider";
 import PlaceholderLink from "@/components/ui/PlaceholderLink";
-import { ApiError } from "@/lib/auth-api";
+import { ACCOUNT_SUSPENDED_CODE, ApiError, CONSENT_REQUIRED_CODE, apiErrorCode } from "@/lib/auth-api";
 import { ESTABLISHMENT_STATUS_CLASS, ESTABLISHMENT_STATUS_LABEL } from "@/lib/format";
-import { getRestaurantStatus, type EstablishmentStatus, type RestaurantStatus } from "@/lib/restaurant-api";
+import {
+  getRestaurantReviewSummary,
+  getRestaurantStatus,
+  RESTAURANT_REVIEWS_CHANGED,
+  type EstablishmentStatus,
+  type RestaurantStatus,
+} from "@/lib/restaurant-api";
 
 const STATUS_PATH = "/restaurant/status";
 const DASHBOARD_PATH = "/restaurant/dashboard";
+const REVIEWS_PATH = "/restaurant/reviews";
 
 // Sin href el ítem es un PlaceholderLink: la sección del diseño todavía no existe.
 const NAV_ITEMS: Array<{ href?: string; label: string; icon: LucideIcon }> = [
@@ -24,16 +31,23 @@ const NAV_ITEMS: Array<{ href?: string; label: string; icon: LucideIcon }> = [
   { href: "/restaurant/products", label: "Menú y Productos", icon: UtensilsCrossed },
   { href: "/restaurant/combos", label: "Combos y Promociones", icon: Package },
   { href: "/restaurant/gallery", label: "Galería y Fotos", icon: Images },
-  { label: "Horarios", icon: Clock },
+  { href: REVIEWS_PATH, label: "Reseñas", icon: MessageSquare },
+  { href: "/restaurant/schedules", label: "Horarios", icon: Clock },
   { label: "Soporte", icon: LifeBuoy },
 ];
 
-// Barra inferior móvil (la barra lateral solo se ve desde md).
+// Barra inferior móvil (la barra lateral solo se ve desde md). Combos se abre desde "Menú" y Horarios desde el
+// panel principal [DECISIÓN F-D2].
 const TAB_ITEMS: TabItem[] = [
   { label: "Panel", icon: LayoutDashboard, href: DASHBOARD_PATH },
-  { label: "Mi Menú", icon: UtensilsCrossed, href: "/restaurant/products" },
+  {
+    label: "Menú",
+    icon: UtensilsCrossed,
+    href: "/restaurant/products",
+    match: (path) => path.startsWith("/restaurant/products") || path.startsWith("/restaurant/combos"),
+  },
+  { label: "Reseñas", icon: MessageSquare, href: REVIEWS_PATH },
   { label: "Fotos", icon: Images, href: "/restaurant/gallery" },
-  { label: "Combos", icon: Package, href: "/restaurant/combos" },
   { label: "Perfil", icon: Store, href: "/restaurant/profile" },
 ];
 
@@ -45,14 +59,37 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   // La sesión viene del AuthProvider (una sola consulta para toda la app).
-  const { user, isLoading: isSessionLoading } = useAuth();
+  const { user, isLoading: isSessionLoading, suspended } = useAuth();
   const [accessState, setAccessState] = useState<AccessState>("checking");
   const [restaurant, setRestaurant] = useState<RestaurantStatus | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  // Reseñas sin responder (contador del menú). Se recarga al navegar y cuando la página de reseñas avisa.
+  const [unanswered, setUnanswered] = useState(0);
   const role = user?.role;
+  const isPanel = accessState === "granted" && restaurant?.status === "APPROVED";
+
+  useEffect(() => {
+    if (!isPanel) return;
+    let cancelled = false;
+    const refresh = () => {
+      getRestaurantReviewSummary()
+        .then((summary) => {
+          if (!cancelled) setUnanswered(summary?.unanswered_count ?? 0);
+        })
+        .catch(() => undefined);
+    };
+    refresh();
+    window.addEventListener(RESTAURANT_REVIEWS_CHANGED, refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(RESTAURANT_REVIEWS_CHANGED, refresh);
+    };
+  }, [isPanel, pathname]);
 
   useEffect(() => {
     if (isSessionLoading) return;
+    // Cuenta suspendida: AuthProvider ya redirige a /account-suspended.
+    if (suspended) return;
     if (!role) {
       router.replace("/login");
       return;
@@ -90,6 +127,9 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
           router.replace("/login");
           return;
         }
+        if (apiErrorCode(error) === ACCOUNT_SUSPENDED_CODE) return;
+        // Política sin aceptar: ConsentGate está abierto y recarga la página al aceptar.
+        if (apiErrorCode(error) === CONSENT_REQUIRED_CODE) return;
         if (error instanceof ApiError && error.status === 403) {
           router.replace(STATUS_PATH);
           return;
@@ -103,7 +143,7 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
     return () => {
       cancelled = true;
     };
-  }, [pathname, router, isSessionLoading, role]);
+  }, [pathname, router, isSessionLoading, role, suspended]);
 
   if (accessState === "checking") {
     return (
@@ -150,16 +190,25 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
           </div>
         </div>
 
-        <nav aria-label="Panel del restaurante" className="mt-6 flex flex-col gap-1">
+        <nav aria-label="Panel del establecimiento" className="mt-6 flex flex-col gap-1">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const isActive = href ? pathname === href : false;
             const className = `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
               isActive ? "bg-[#514ddd] text-white shadow-[0_6px_16px_rgba(81,77,221,0.25)]" : "text-[#43506a] hover:bg-[#f3f5fb]"
             }`;
+            const count = href === REVIEWS_PATH ? unanswered : 0;
             const content = (
               <>
                 <Icon aria-hidden="true" className="size-4 shrink-0" />
-                {label}
+                <span className="flex-1">{label}</span>
+                {count > 0 && (
+                  <span
+                    aria-label={`${count} sin responder`}
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${isActive ? "bg-white/25 text-white" : "bg-[#d6154a] text-white"}`}
+                  >
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
               </>
             );
             return href ? (
@@ -199,7 +248,7 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
         <section className="flex-1 p-5 sm:p-8">{children}</section>
       </div>
 
-      <BottomTabBar items={TAB_ITEMS} label="Navegación del restaurante" />
+      <BottomTabBar items={TAB_ITEMS} label="Navegación del establecimiento" />
     </div>
   );
 }

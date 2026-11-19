@@ -1,15 +1,45 @@
 "use client";
 
-import { ArrowLeft, CheckCircle2, Copy, History, Images, Mail, MapPin, Phone, ShieldCheck, Store, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Ban,
+  CheckCircle2,
+  Copy,
+  Flag,
+  History,
+  Images,
+  Mail,
+  MapPin,
+  MapPinOff,
+  MessageSquare,
+  Navigation,
+  Phone,
+  RotateCcw,
+  ShieldCheck,
+  Star,
+  Store,
+  TriangleAlert,
+  UserRound,
+  Wrench,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
+import ConfirmWithReasonModal from "@/components/admin/ConfirmWithReasonModal";
+import { StaticLocationMap } from "@/components/map/lazy";
 import Modal from "@/components/ui/Modal";
 import {
+  announceAdminCountsChanged,
   approveEstablishment,
   getAdminEstablishment,
+  reactivateEstablishment,
   rejectEstablishment,
+  suspendEstablishment,
   type AdminEstablishmentDetail,
 } from "@/lib/admin-api";
+import { timeAgo } from "@/lib/datetime";
+import { ESTABLISHMENT_TYPES, formatRating } from "@/lib/establishments-api";
+import { directionsUrl } from "@/lib/geo";
 import { ESTABLISHMENT_STATUS_CLASS, ESTABLISHMENT_STATUS_LABEL } from "@/lib/format";
 import type { EstablishmentStatus } from "@/lib/restaurant-api";
 
@@ -27,16 +57,6 @@ function initials(name: string | null | undefined) {
     .join("");
 }
 
-// "hace 2 h", "hace 3 días": solo para la etiqueta de recepción.
-function timeAgo(iso: string) {
-  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (minutes < 60) return `hace ${minutes} min`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `hace ${hours} h`;
-  const days = Math.round(hours / 24);
-  return `hace ${days} ${days === 1 ? "día" : "días"}`;
-}
-
 export default function AdminEstablishmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const establishmentId = Number(id);
@@ -51,6 +71,8 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
   const [isConfirmingApprove, setIsConfirmingApprove] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [reason, setReason] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [statusDialog, setStatusDialog] = useState<"suspend" | "reactivate" | null>(null);
 
   useEffect(() => {
     if (Number.isNaN(establishmentId)) return;
@@ -75,7 +97,9 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
     try {
       const decision = await approveEstablishment(establishmentId);
       setMessage(decision?.message ?? "Establecimiento aprobado.");
+      setWarnings(decision?.warnings ?? []);
       setIsConfirmingApprove(false);
+      announceAdminCountsChanged();
       setReloadKey((key) => key + 1);
     } catch (approveError) {
       setError(approveError instanceof Error ? approveError.message : "No fue posible aprobar la solicitud.");
@@ -92,7 +116,9 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
     try {
       const decision = await rejectEstablishment(establishmentId, reason.trim());
       setMessage(decision?.message ?? "Solicitud rechazada.");
+      setWarnings([]);
       setIsRejecting(false);
+      announceAdminCountsChanged();
       setReason("");
       setReloadKey((key) => key + 1);
     } catch (rejectError) {
@@ -101,11 +127,19 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
   };
 
   const card = "rounded-3xl bg-white p-6 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-8";
-  const canDecide = detail !== null && detail.status !== "APPROVED";
+  // Aprobar y rechazar solo desde PENDING; un local aprobado se suspende y uno rechazado debe re-aplicar.
+  const canDecide = detail !== null && detail.status === "PENDING";
+  const latitude = detail?.latitude != null ? Number(detail.latitude) : null;
+  const longitude = detail?.longitude != null ? Number(detail.longitude) : null;
+  const coordinates =
+    latitude !== null && longitude !== null && !Number.isNaN(latitude) && !Number.isNaN(longitude)
+      ? { latitude, longitude }
+      : null;
   const statusDot: Record<EstablishmentStatus, string> = {
     PENDING: "bg-amber-500",
     APPROVED: "bg-emerald-600",
     REJECTED: "bg-red-600",
+    SUSPENDED: "bg-slate-600",
   };
 
   const decisionButtons = (
@@ -138,6 +172,16 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
 
       {error && <p className="rounded-2xl bg-[#fde8ea] px-5 py-4 text-sm font-semibold text-[#a30f35]">{error}</p>}
       {message && <p className="rounded-2xl bg-[#c6f7f0] px-5 py-4 text-sm font-semibold text-[#0b6b5c]">{message}</p>}
+      {warnings.length > 0 && (
+        <ul className="space-y-1 rounded-2xl bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          {warnings.map((warning) => (
+            <li key={warning} className="flex items-start gap-2">
+              <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              {warning}
+            </li>
+          ))}
+        </ul>
+      )}
       {!detail && !error && (
         <div className="space-y-4">
           <div className="h-12 w-72 animate-pulse rounded-xl bg-[#e9edff]" />
@@ -162,7 +206,27 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
             {canDecide && <div className="hidden gap-3 lg:flex [&>button]:py-3">{decisionButtons}</div>}
           </header>
 
-          {detail.rejection_reason && (
+          {detail.status === "SUSPENDED" && (
+            <section className="flex gap-4 rounded-3xl bg-slate-100 p-5 sm:p-6">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-700">
+                <Ban aria-hidden="true" className="size-5" />
+              </span>
+              <div className="space-y-1">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-slate-700">Establecimiento suspendido</p>
+                <p className="text-sm leading-relaxed text-[#17243d]">
+                  No aparece en el directorio ni en el mapa y su panel está bloqueado.
+                  {detail.suspension_reason && (
+                    <>
+                      {" "}
+                      <span className="font-bold">Motivo:</span> “{detail.suspension_reason}”
+                    </>
+                  )}
+                </p>
+              </div>
+            </section>
+          )}
+
+          {detail.rejection_reason && detail.status !== "APPROVED" && (
             <section className="flex gap-4 rounded-3xl bg-[#e4ebff] p-5 sm:p-6">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#d9dcf6] text-[#514ddd]">
                 <History aria-hidden="true" className="size-5" />
@@ -190,7 +254,7 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
                     </div>
                   </div>
                   <span className="hidden shrink-0 rounded-full bg-[#eef0ff] px-3 py-1 text-xs font-medium text-[#26344d] sm:inline">
-                    Recibida {timeAgo(detail.created_at)}
+                    Recibida {timeAgo(detail.created_at).toLowerCase()}
                   </span>
                 </div>
 
@@ -217,6 +281,70 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
                   <p className="text-[11px] font-bold uppercase tracking-wider text-[#6d6e7a]">Descripción comercial del negocio</p>
                   <p className="rounded-2xl bg-[#f3f5ff] p-5 text-base leading-relaxed text-[#26344d]">“{detail.description}”</p>
                 </div>
+              </section>
+
+              <section className={`${card} space-y-5`}>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#eef0ff] text-[#514ddd]">
+                      <MapPin aria-hidden="true" className="size-6" />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-bold">Ubicación y reputación</h2>
+                      <p className="text-sm text-[#6d6e7a]">
+                        {ESTABLISHMENT_TYPES[detail.establishment_type] ?? detail.establishment_type}
+                        {detail.city ? ` · ${detail.city}` : ""}
+                        {detail.price_range ? ` · ${detail.price_range}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                    <span className="flex items-center gap-1 rounded-full bg-[#eef0ff] px-3 py-1">
+                      <Star aria-hidden="true" className="size-3.5 fill-[#d6154a] text-[#d6154a]" />
+                      {detail.rating_count > 0 ? `${formatRating(detail.rating_avg)} (${detail.rating_count})` : "Sin reseñas"}
+                    </span>
+                    {detail.open_reports_count > 0 && (
+                      <Link
+                        href="/admin/reports"
+                        className="flex items-center gap-1 rounded-full bg-[#fde0e3] px-3 py-1 text-[#a30f35] hover:underline"
+                      >
+                        <Flag aria-hidden="true" className="size-3.5" />
+                        {detail.open_reports_count} {detail.open_reports_count === 1 ? "reporte abierto" : "reportes abiertos"}
+                      </Link>
+                    )}
+                  </div>
+                </div>
+                {coordinates ? (
+                  <div className="space-y-3">
+                    <StaticLocationMap
+                      latitude={coordinates.latitude}
+                      longitude={coordinates.longitude}
+                      name={detail.name}
+                      establishmentType={detail.establishment_type}
+                      className="h-56 overflow-hidden rounded-2xl"
+                    />
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#6d6e7a]">
+                      <span>
+                        {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}
+                        {detail.location_source ? ` · origen: ${detail.location_source}` : ""}
+                      </span>
+                      <a
+                        href={directionsUrl(coordinates.latitude, coordinates.longitude, detail.google_place_id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 font-semibold text-[#514ddd] hover:underline"
+                      >
+                        <Navigation aria-hidden="true" className="size-3.5" />
+                        Abrir en Google Maps
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="flex items-center gap-2 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+                    <MapPinOff aria-hidden="true" className="size-4 shrink-0" />
+                    Sin ubicación: no aparece en el mapa ni en “Cerca de mí”.
+                  </p>
+                )}
               </section>
 
               <section className={`${card} space-y-5`}>
@@ -328,6 +456,51 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
                 </dl>
               </section>
 
+              <section className={`${card} space-y-3`}>
+                <h2 className="text-sm font-bold uppercase tracking-wide text-[#6d6e7a]">Administración</h2>
+                <Link
+                  href={`/admin/establishments/${detail.id}/manage`}
+                  className="flex items-center gap-2 rounded-xl bg-[#514ddd] px-4 py-3 text-sm font-bold text-white hover:bg-[#4542ca]"
+                >
+                  <Wrench aria-hidden="true" className="size-4" />
+                  Gestionar como establecimiento
+                </Link>
+                <Link
+                  href={`/admin/reviews?establishment_id=${detail.id}`}
+                  className="flex items-center gap-2 rounded-xl bg-[#eef0ff] px-4 py-3 text-sm font-semibold text-[#514ddd] hover:bg-[#e2e5ff]"
+                >
+                  <MessageSquare aria-hidden="true" className="size-4" />
+                  Ver sus reseñas
+                </Link>
+                <Link
+                  href={`/admin/users/${detail.owner_id}`}
+                  className="flex items-center gap-2 rounded-xl bg-[#eef0ff] px-4 py-3 text-sm font-semibold text-[#514ddd] hover:bg-[#e2e5ff]"
+                >
+                  <UserRound aria-hidden="true" className="size-4" />
+                  Ver la cuenta dueña
+                </Link>
+                {detail.status === "APPROVED" && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusDialog("suspend")}
+                    className="flex w-full items-center gap-2 rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200"
+                  >
+                    <Ban aria-hidden="true" className="size-4" />
+                    Suspender establecimiento
+                  </button>
+                )}
+                {detail.status === "SUSPENDED" && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusDialog("reactivate")}
+                    className="flex w-full items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+                  >
+                    <RotateCcw aria-hidden="true" className="size-4" />
+                    Reactivar establecimiento
+                  </button>
+                )}
+              </section>
+
               {canDecide && (
                 <section className="hidden space-y-4 rounded-3xl bg-[#e4e6fb] p-6 lg:block">
                   <h2 className="flex items-center gap-2 text-sm font-bold text-[#514ddd]">
@@ -369,7 +542,7 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
       {isConfirmingApprove && (
         <Modal title="Aprobar establecimiento" onClose={() => setIsConfirmingApprove(false)}>
           <p className="text-sm text-[#43506a]">
-            Al aprobarlo, el restaurante podrá acceder a su panel y aparecerá en el directorio público.
+            Al aprobarlo, el establecimiento podrá acceder a su panel y aparecerá en el directorio público.
           </p>
           <div className="mt-6 flex justify-end gap-3">
             <button type="button" onClick={() => setIsConfirmingApprove(false)} className="rounded-xl px-4 py-2 text-sm font-semibold text-[#6d6e7a] hover:bg-[#f3f5fb]">
@@ -387,6 +560,40 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
         </Modal>
       )}
 
+      {statusDialog === "suspend" && detail && (
+        <ConfirmWithReasonModal
+          title={`Suspender ${detail.name}`}
+          description="Desaparece del directorio y del mapa, su panel queda bloqueado y el dueño recibe el motivo. Puedes reactivarlo después."
+          confirmLabel="Suspender"
+          placeholder="Ej.: Varias reseñas confirman cobros indebidos."
+          onClose={() => setStatusDialog(null)}
+          onConfirm={async (text) => {
+            const decision = await suspendEstablishment(establishmentId, text);
+            setStatusDialog(null);
+            setWarnings([]);
+            setMessage(decision?.message ?? "Establecimiento suspendido.");
+            setReloadKey((key) => key + 1);
+          }}
+        />
+      )}
+      {statusDialog === "reactivate" && detail && (
+        <ConfirmWithReasonModal
+          title={`Reactivar ${detail.name}`}
+          description="Vuelve a aparecer en el directorio y en el mapa, y recupera su panel."
+          confirmLabel="Reactivar"
+          reasonLabel="Nota para el dueño"
+          required={false}
+          tone="primary"
+          onClose={() => setStatusDialog(null)}
+          onConfirm={async (note) => {
+            const decision = await reactivateEstablishment(establishmentId, note);
+            setStatusDialog(null);
+            setMessage(decision?.message ?? "Establecimiento reactivado.");
+            setReloadKey((key) => key + 1);
+          }}
+        />
+      )}
+
       {isRejecting && (
         <Modal title="Rechazar solicitud" onClose={() => setIsRejecting(false)}>
           <label className="block space-y-2">
@@ -397,7 +604,7 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               className="w-full rounded-xl bg-[#eef2ff] px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-[#6868e8]/40"
-              placeholder="Explica qué debe corregir el restaurante"
+              placeholder="Explica qué debe corregir el establecimiento"
             />
             <span className="block text-xs text-[#6d6e7a]">
               Entre {REASON_MIN} y {REASON_MAX} caracteres.

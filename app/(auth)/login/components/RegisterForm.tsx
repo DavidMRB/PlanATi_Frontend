@@ -7,6 +7,7 @@ import {
   Phone,
   UserRound,
 } from "lucide-react";
+import ConsentCheckboxes from "@/components/privacy/ConsentCheckboxes";
 import { useRegisterForm } from "./RegisterForm.ts";
 
 type RegisterFormProps = {
@@ -27,6 +28,9 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
     setPassword,
     touched,
     setTouched,
+    consent,
+    setConsent,
+    consentTouched,
     isSubmitting,
     submitError,
     passwordRules,
@@ -153,6 +157,8 @@ export default function RegisterForm({ onLoginClick }: RegisterFormProps) {
             </li>
           </ul>
         </label>
+
+        <ConsentCheckboxes value={consent} onChange={setConsent} showError={consentTouched} compact />
 
         <button type="submit" disabled={isSubmitting} className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#514ddd] text-base font-bold text-white shadow-[0_8px_18px_rgba(81,77,221,0.24)] transition hover:bg-[#4542ca] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4c4cdd] disabled:cursor-not-allowed disabled:opacity-60 xl:mt-3 xl:h-9 xl:rounded-lg xl:text-xs">
           {isSubmitting ? "Validando..." : "Crear mi cuenta"}
