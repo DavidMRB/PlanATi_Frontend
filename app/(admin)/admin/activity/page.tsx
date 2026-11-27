@@ -1,6 +1,6 @@
 "use client";
 
-import { History } from "lucide-react";
+import { ArrowRight, History, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
@@ -11,7 +11,13 @@ import { formatDateTime } from "@/lib/datetime";
 const PAGE_SIZE = 25;
 
 const select =
-  "h-10 rounded-xl bg-[#eef0ff] px-3 text-sm font-semibold text-[#26344d] outline-none focus:ring-2 focus:ring-[#6868e8]/50";
+  "h-10 w-full min-w-0 rounded-xl bg-[#eef0ff] px-3 text-sm font-semibold text-[#26344d] outline-none focus:ring-2 focus:ring-[#6868e8]/50";
+
+function actionTone(action: string): string {
+  if (/^(SUSPEND|DELETE|BLOCK|HIDE|DISMISS)_/.test(action)) return "bg-[#fde0e3] text-[#a30f35]";
+  if (/^(REACTIVATE|RESTORE|RESOLVE|UNBLOCK)_/.test(action)) return "bg-[#e3f7f3] text-[#0b6b5c]";
+  return "bg-[#eef0ff] text-[#514ddd]";
+}
 
 // Destinos con página propia en la consola.
 function targetHref(action: ModerationActionItem): string | null {
@@ -27,33 +33,37 @@ export default function AdminActivityPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#514ddd]">Auditoría del sistema</p>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Actividad</h1>
         <p className="max-w-2xl text-base text-[#6d6e7a]">Bitácora de moderación: quién hizo qué, sobre qué contenido y por qué.</p>
       </header>
 
-      <div className="flex flex-wrap gap-3 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-5">
-        <label className="sr-only" htmlFor="activity-action">
-          Acción
+      <div className="grid grid-cols-2 items-end gap-3 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-5 xl:grid-cols-[minmax(0,15rem)_minmax(0,13rem)_1fr]">
+        <label className="grid min-w-0 gap-1.5 text-xs font-bold text-[#43506a]" htmlFor="activity-action">
+          Tipo de acción
+          <select id="activity-action" value={action} onChange={(event) => setAction(event.target.value)} className={select}>
+            <option value="">Todas las acciones</option>
+            {Object.entries(MODERATION_ACTION_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </label>
-        <select id="activity-action" value={action} onChange={(event) => setAction(event.target.value)} className={select}>
-          <option value="">Todas las acciones</option>
-          {Object.entries(MODERATION_ACTION_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor="activity-target">
+        <label className="grid min-w-0 gap-1.5 text-xs font-bold text-[#43506a]" htmlFor="activity-target">
           Tipo de destino
+          <select id="activity-target" value={targetType} onChange={(event) => setTargetType(event.target.value)} className={select}>
+            <option value="">Todos los destinos</option>
+            {Object.entries(TARGET_TYPE_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </label>
-        <select id="activity-target" value={targetType} onChange={(event) => setTargetType(event.target.value)} className={select}>
-          <option value="">Todos los destinos</option>
-          {Object.entries(TARGET_TYPE_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <button type="button" onClick={() => { setAction(""); setTargetType(""); }} disabled={!action && !targetType} className="col-span-2 ml-auto flex h-9 items-center gap-2 rounded-xl bg-[#f3f5ff] px-3 text-xs font-bold text-[#514ddd] disabled:opacity-50 xl:col-span-1 xl:h-10">
+          <RotateCcw aria-hidden="true" className="size-4" /> Limpiar filtros
+        </button>
       </div>
 
       <ActivityPages key={`${action}-${targetType}`} action={action} targetType={targetType} />
@@ -98,45 +108,52 @@ function ActivityPages({ action, targetType }: { action: string; targetType: str
   return (
     <div className="space-y-4">
       {error && <p className="rounded-2xl bg-[#fde8ea] px-5 py-4 text-sm font-semibold text-[#a30f35]">{error}</p>}
+      {!error && <dl className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl bg-[#eef0ff] p-4"><dt className="text-xs font-semibold">Acciones registradas con estos filtros</dt><dd className="text-2xl font-extrabold text-[#514ddd]">{total}</dd></div>
+        <div className="rounded-xl bg-[#e3f7f3] p-4"><dt className="text-xs font-semibold">Última acción del listado</dt><dd className="mt-1 text-sm font-bold text-[#006c60]">{items[0] ? formatDateTime(items[0].created_at) : "Sin registros"}</dd></div>
+      </dl>}
       {items.length === 0 && !error ? (
         <EmptyState icon={History} title="Sin actividad con esos filtros" />
       ) : (
-        <ol className="divide-y divide-[#f0f2f8] overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
-          {items.map((item) => {
-            const href = targetHref(item);
-            const target = `${TARGET_TYPE_LABEL[item.target_type] ?? item.target_type} #${item.target_id}`;
-            return (
-              <li key={item.id} className="space-y-1 px-5 py-4 text-sm">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p>
-                    <span className="font-bold">{item.admin_name ?? "Sistema"}</span>{" "}
-                    <span className="text-[#43506a]">{(MODERATION_ACTION_LABEL[item.action] ?? item.action).toLowerCase()}</span>{" "}
-                    {href ? (
-                      <Link href={href} className="font-semibold text-[#514ddd] hover:underline">
-                        {target}
-                      </Link>
-                    ) : (
-                      <span className="font-semibold">{target}</span>
+        <div className="xl:overflow-hidden xl:rounded-2xl xl:bg-white xl:shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
+          <div aria-hidden="true" className="hidden grid-cols-[2fr_1.25fr_1fr_1.2fr] gap-4 bg-[#eef2ff] px-5 py-4 text-xs font-bold uppercase tracking-wide text-[#43506a] xl:grid">
+            <span>Acción</span><span>Destino</span><span>Fecha y hora</span><span>Responsable</span>
+          </div>
+          <ol className="space-y-3 lg:divide-y lg:divide-[#f0f2f8] lg:space-y-0">
+            {items.map((item) => {
+              const href = targetHref(item);
+              const target = `${TARGET_TYPE_LABEL[item.target_type] ?? item.target_type} #${item.target_id}`;
+              return (
+                <li key={item.id} className="grid gap-3 rounded-2xl bg-white p-4 text-sm shadow-sm xl:grid-cols-[2fr_1.25fr_1fr_1.2fr] lg:gap-4 xl:rounded-none xl:px-5 xl:shadow-none">
+                  <div className="min-w-0 space-y-1.5">
+                    <p className={`inline-flex max-w-full break-words rounded-full px-2.5 py-1 text-xs font-bold ${actionTone(item.action)}`}>{MODERATION_ACTION_LABEL[item.action] ?? item.action}</p>
+                    {item.reason && <p className="break-words text-[#43506a]">“{item.reason}”</p>}
+                    {item.details && Object.keys(item.details).length > 0 && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer font-semibold text-[#514ddd]">Detalles</summary>
+                        <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[#f8f9ff] p-3 text-[#26344d]">
+                          {JSON.stringify(item.details, null, 2)}
+                        </pre>
+                      </details>
                     )}
-                  </p>
-                  <time dateTime={item.created_at} className="text-xs text-[#6d6e7a]">
-                    {formatDateTime(item.created_at)}
-                  </time>
-                </div>
-                {item.admin_email && <p className="text-xs text-[#6d6e7a]">{item.admin_email}</p>}
-                {item.reason && <p className="text-[#43506a]">“{item.reason}”</p>}
-                {item.details && Object.keys(item.details).length > 0 && (
-                  <details className="text-xs">
-                    <summary className="cursor-pointer font-semibold text-[#514ddd]">Detalles</summary>
-                    <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[#f8f9ff] p-3 text-[#26344d]">
-                      {JSON.stringify(item.details, null, 2)}
-                    </pre>
-                  </details>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <p className="break-words font-semibold">{target}</p>
+                    {href && <Link href={href} className="inline-flex items-center gap-1 text-xs font-bold text-[#514ddd] hover:underline">Ver detalle <ArrowRight aria-hidden="true" className="size-3" /></Link>}
+                  </div>
+                  <time dateTime={item.created_at} className="text-xs text-[#6d6e7a]">{formatDateTime(item.created_at)}</time>
+                  <div className="flex min-w-0 items-center gap-2 border-t border-[#edf0fa] pt-2 lg:border-0 lg:pt-0">
+                    <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-[#eef0ff] text-xs font-bold text-[#514ddd]">{(item.admin_name ?? "Sistema").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("")}</span>
+                    <div className="min-w-0">
+                      <p className="break-words text-xs font-bold">{item.admin_name ?? "Sistema"}</p>
+                      {item.admin_email && <p className="break-all text-xs text-[#6d6e7a]">{item.admin_email}</p>}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       )}
       <LoadMoreButton loaded={items.length} total={total} isLoading={loadingMore} onLoadMore={() => void loadMore()} />
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Ban, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import ProductModal from "@/components/restaurant/ProductModal";
 import { ApiError } from "@/lib/auth-api";
 import { formatCop } from "@/lib/format";
@@ -87,7 +87,7 @@ function RowActions({
   );
 }
 
-export default function ProductsManager({ api }: { api: EstablishmentManagementApi }) {
+export default function ProductsManager({ api, exportAction }: { api: EstablishmentManagementApi; exportAction?: ReactNode }) {
   const [products, setProducts] = useState<MenuItem[] | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [editing, setEditing] = useState<MenuItem | null>(null);
@@ -214,14 +214,17 @@ export default function ProductsManager({ api }: { api: EstablishmentManagementA
               reflejan al instante para los comensales.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#514ddd] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca]"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            Nuevo producto
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {exportAction}
+            <button
+              type="button"
+              onClick={openCreate}
+              className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#514ddd] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca]"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              Nuevo producto
+            </button>
+          </div>
         </div>
       </header>
 
@@ -273,7 +276,7 @@ export default function ProductsManager({ api }: { api: EstablishmentManagementA
       {visible.length > 0 && (
         <section className={`${card} overflow-hidden`}>
           {/* Escritorio y tablet: tabla */}
-          <table className="hidden w-full text-left md:table">
+          <table className="hidden w-full text-left xl:table">
             <thead className="bg-[#f3f5ff] text-[11px] font-bold uppercase tracking-widest text-[#43506a]">
               <tr>
                 <th className="px-6 py-4">Plato</th>
@@ -326,7 +329,7 @@ export default function ProductsManager({ api }: { api: EstablishmentManagementA
           </table>
 
           {/* Móvil: tarjetas */}
-          <ul className="space-y-4 p-4 md:hidden">
+          <ul className="grid gap-3 p-3 sm:p-4 xl:hidden">
             {visible.map((product) => (
               <li key={product.id} className="rounded-2xl bg-white p-3 shadow-[0_4px_16px_rgba(23,36,61,0.08)]">
                 <div className="flex gap-3">

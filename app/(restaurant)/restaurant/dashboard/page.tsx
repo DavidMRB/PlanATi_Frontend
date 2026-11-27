@@ -369,7 +369,7 @@ export default function RestaurantDashboardPage() {
           <h2 className="text-2xl font-extrabold sm:text-3xl">Módulos de administración</h2>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:gap-6">
           {modules.map((module) => {
             const Icon = module.icon;
             return (

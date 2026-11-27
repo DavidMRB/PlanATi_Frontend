@@ -1,9 +1,8 @@
 "use client";
 
-import { Search } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { usePathname } from "next/navigation";
+import EstablishmentSearch from "@/components/establishments/EstablishmentSearch";
 import NotificationsBell from "@/components/common/NotificationsBell";
 import UserMenu from "@/components/common/UserMenu";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -37,17 +36,9 @@ const USER_ONLY = new Set(["/plans", "/favorites"]);
 export default function Navbar() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
-  const [query, setQuery] = useState("");
 
   // En móvil el detalle del establecimiento deja la portada a pantalla completa y usa su propio enlace "Explorar".
-  const hiddenOnMobile = pathname.startsWith("/establishments/");
-
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const term = query.trim();
-    router.push(term ? `/explore?search=${encodeURIComponent(term)}` : "/explore");
-  };
+  const hiddenOnMobile = pathname.startsWith("/establishments/") || pathname === "/plans/new";
 
   return (
     <header
@@ -59,26 +50,14 @@ export default function Navbar() {
           <span className="text-xl font-extrabold tracking-tight text-[#514ddd]">PlanATi</span>
         </Link>
 
-        <form role="search" onSubmit={handleSearch} className="hidden min-w-0 flex-1 lg:block lg:max-w-md">
-          <label className="flex h-11 items-center gap-3 rounded-full border border-[#d7dcf2] bg-[#eef0ff] px-4 focus-within:ring-2 focus-within:ring-[#6868e8]/40">
-            <Search aria-hidden="true" className="size-5 shrink-0 text-[#43506a]" />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Explorar lugares, eventos..."
-              aria-label="Buscar lugares y eventos"
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#81869a]"
-            />
-          </label>
-        </form>
+        <EstablishmentSearch className="hidden min-w-0 flex-1 lg:block lg:max-w-md" />
 
         <nav aria-label="Principal" className="ml-auto hidden items-center gap-1 text-sm font-semibold md:flex">
           {LINKS.filter(({ href }) => !(USER_ONLY.has(href ?? "") && user && user.role !== "user")).map(({ label, href, match }) => {
             const isActive = href ? (match ? match(pathname) : pathname === href) : false;
             const className = `rounded-lg px-3 py-2 transition ${
               isActive
-                ? "text-[#514ddd] underline decoration-2 underline-offset-8"
+                ? "bg-[#514ddd] text-white shadow-sm"
                 : "text-[#26344d] hover:bg-[#f3f5fb] hover:text-[#514ddd]"
             }`;
             return href ? (

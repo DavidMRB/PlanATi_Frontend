@@ -1,3 +1,4 @@
+import { bogotaParts } from "./datetime";
 import { authEndpoint, getAuthRequest } from "./auth-api";
 import { boundsToQuery, type Bounds } from "./geo";
 import type { MyReview, RatingDistribution, Review, ReviewBlockReason } from "./reviews-api";
@@ -199,4 +200,22 @@ export function getMapMarkers(bounds: Bounds, filters: EstablishmentFilters = {}
 export function formatRating(value: number | null | undefined): string | null {
   if (value === null || value === undefined || !Number.isFinite(value)) return null;
   return value.toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+export function openStatus(schedules: Omit<EstablishmentSchedule, "id">[]) {
+  if (!schedules.length) return null;
+  const { weekday, hour, minute } = bogotaParts();
+  const now = hour * 60 + minute;
+  const previousDay = (weekday + 6) % 7;
+  for (const interval of schedules) {
+    const [openHour, openMinute] = interval.opening_time.split(":").map(Number);
+    const [closeHour, closeMinute] = interval.closing_time.split(":").map(Number);
+    const start = openHour * 60 + openMinute;
+    const end = closeHour * 60 + closeMinute;
+    const overnight = end < start;
+    const sameDay = interval.day_of_week === weekday && now >= start && (overnight || now < end);
+    const fromYesterday = overnight && interval.day_of_week === previousDay && now < end;
+    if (sameDay || fromYesterday) return { open: true, closesAt: interval.closing_time.slice(0, 5) };
+  }
+  return { open: false, closesAt: null };
 }

@@ -28,6 +28,7 @@ import { use, useEffect, useState } from "react";
 import ConfirmWithReasonModal from "@/components/admin/ConfirmWithReasonModal";
 import { StaticLocationMap } from "@/components/map/lazy";
 import Modal from "@/components/ui/Modal";
+import ExcelExportButton from "@/components/ui/ExcelExportButton";
 import {
   announceAdminCountsChanged,
   approveEstablishment,
@@ -57,7 +58,11 @@ function initials(name: string | null | undefined) {
     .join("");
 }
 
-export default function AdminEstablishmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function AdminEstablishmentDetailPage({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const fromRequests = use(searchParams).from === "requests";
   const { id } = use(params);
   const establishmentId = Number(id);
 
@@ -165,9 +170,9 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
 
   return (
     <div className={`space-y-6 ${canDecide ? "pb-24 lg:pb-0" : ""}`}>
-      <Link href="/admin/establishments" className="inline-flex items-center gap-2 text-sm font-semibold text-[#514ddd] hover:underline">
+      <Link href={fromRequests ? "/admin/requests" : "/admin/establishments"} className="inline-flex items-center gap-2 text-sm font-semibold text-[#514ddd] hover:underline">
         <ArrowLeft aria-hidden="true" className="size-4" />
-        Volver a establecimientos
+        {fromRequests ? "Volver a solicitudes" : "Volver a establecimientos"}
       </Link>
 
       {error && <p className="rounded-2xl bg-[#fde8ea] px-5 py-4 text-sm font-semibold text-[#a30f35]">{error}</p>}
@@ -200,6 +205,10 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
                   {ESTABLISHMENT_STATUS_LABEL[detail.status]}
                 </span>
                 <span className="rounded-full bg-[#eef0ff] px-3 py-1 text-xs font-semibold text-[#26344d]">ID: EST-{detail.id}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <ExcelExportButton path={`/admin/establishments/${detail.id}/exports/menu.xlsx`} filename={`menu-establecimiento-${detail.id}.xlsx`} label="Exportar menú en Excel" />
+                <ExcelExportButton path={`/admin/establishments/${detail.id}/exports/reviews.xlsx`} filename={`resenas-establecimiento-${detail.id}.xlsx`} label="Exportar reseñas en Excel" />
               </div>
             </div>
 
@@ -240,7 +249,7 @@ export default function AdminEstablishmentDetailPage({ params }: { params: Promi
             </section>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:gap-6">
             <div className="space-y-6">
               <section className={`${card} space-y-6`}>
                 <div className="flex items-start justify-between gap-4">

@@ -3,6 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
+import PlanStatusBadge from "@/components/plans/PlanStatusBadge";
 import PlanBuilder from "@/components/plans/PlanBuilder.tsx";
 import { getPlan, isPlanEditable, planErrorMessage, type PlanDetail } from "@/lib/plans-api";
 
@@ -39,7 +40,13 @@ export default function EditPlanPage({ params }: { params: Promise<{ id: string 
           <ArrowLeft aria-hidden="true" className="size-4" />
           Volver al plan
         </Link>
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Editar plan</h1>
+        <header className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[#e7eafa] bg-white p-4 sm:p-6">
+          <div className="space-y-1.5">
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Editar plan</h1>
+          <p className="text-sm text-[#43506a]">Modifica los detalles, productos y recordatorio de tu visita.</p>
+          </div>
+          {plan && <PlanStatusBadge status={plan.status} />}
+        </header>
         {error ? (
           <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
         ) : plan ? (

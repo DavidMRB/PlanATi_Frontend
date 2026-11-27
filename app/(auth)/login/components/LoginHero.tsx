@@ -35,23 +35,6 @@ export default function LoginHero({ isRight = false }: LoginHeroProps) {
           la Perla del Norte.
         </p>
       </div>
-      <div className="flex items-center gap-3 rounded-2xl bg-black/25 px-4 py-3 text-white backdrop-blur-md xl:px-3 xl:py-2">
-        <div className="flex -space-x-2">
-          <span className="flex size-8 items-center justify-center rounded-full border-2 border-[#52617a] bg-[#4bdbca] text-[0.6rem] font-bold text-white">
-            NC
-          </span>
-          <span className="flex size-8 items-center justify-center rounded-full border-2 border-[#52617a] bg-[#6370eb] text-[0.6rem] font-bold text-white">
-            LR
-          </span>
-          <span className="flex size-8 items-center justify-center rounded-full border-2 border-[#52617a] bg-[#d71957] text-[0.6rem] font-bold text-white">
-            +9k
-          </span>
-        </div>
-        <div>
-          <p className="text-xs font-bold">Comunidad activa</p>
-          <p className="text-[0.68rem] text-white/65">Explorando planes hoy</p>
-        </div>
-      </div>
     </aside>
   );
 }

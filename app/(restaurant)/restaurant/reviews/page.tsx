@@ -7,6 +7,7 @@ import ReplyEditor from "@/components/reviews/ReplyEditor";
 import { ReportButton } from "@/components/reviews/ReportDialog";
 import ReviewCard from "@/components/reviews/ReviewCard";
 import EmptyState from "@/components/ui/EmptyState";
+import ExcelExportButton from "@/components/ui/ExcelExportButton";
 import LoadMoreButton from "@/components/ui/LoadMoreButton";
 import {
   getRestaurantProfile,
@@ -21,8 +22,6 @@ import {
 import type { Review } from "@/lib/reviews-api";
 
 const PAGE_SIZE = 10;
-const card = "rounded-3xl bg-white shadow-[0_8px_24px_rgba(23,36,61,0.06)]";
-
 const TABS: Array<{ value: ReplyFilter; label: string }> = [
   { value: "unanswered", label: "Sin responder" },
   { value: "all", label: "Todas" },
@@ -73,22 +72,22 @@ export default function RestaurantReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <header className={`${card} relative overflow-hidden p-6 sm:p-8`}>
-        <div aria-hidden="true" className="absolute -right-10 -top-16 size-72 rounded-full bg-[#c9cdf4]/40 blur-3xl" />
+      <header className="space-y-3 px-1 py-2 sm:py-4">
         <div className="relative space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#514ddd]">Opiniones de tus clientes</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#514ddd]">Gestión de calidad</p>
           <h1 className="text-3xl font-extrabold sm:text-4xl">Reseñas y respuestas</h1>
-          <p className="max-w-2xl text-base text-[#43506a]">
+          <p className="hidden max-w-2xl text-base text-[#43506a] sm:block">
             Responder a tiempo muestra que te importa la experiencia de quien te visita. Tus respuestas son públicas y
             aparecen debajo de cada reseña.
           </p>
         </div>
+        <ExcelExportButton filename="resenas-planati.xlsx" path="/restaurant/exports/reviews.xlsx" label="Exportar reseñas en Excel" />
       </header>
 
       {summaryError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{summaryError}</p>}
 
       {summary ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,0.33fr)]">
           <RatingSummary
             average={summary.rating_avg}
             count={summary.rating_count}
@@ -97,21 +96,22 @@ export default function RestaurantReviewsPage() {
             category={profile?.category}
             selectedRating={rating}
             onSelectRating={setRating}
+            variant="restaurant"
           />
-          <div className="grid grid-cols-2 gap-4 lg:w-56 lg:grid-cols-1">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
             <button
               type="button"
               onClick={() => setTab("unanswered")}
-              className="rounded-2xl bg-white p-5 text-left shadow-[0_4px_16px_rgba(23,36,61,0.06)] transition hover:ring-2 hover:ring-[#c9cdf4]"
+              className="rounded-2xl bg-[#fceff1] p-4 text-left shadow-sm transition hover:ring-2 hover:ring-[#f1b3c3]"
             >
               <span className="flex size-9 items-center justify-center rounded-xl bg-[#fde0e3] text-[#d6154a]">
                 <MessageSquareReply aria-hidden="true" className="size-5" />
               </span>
-              <p className="mt-3 text-3xl font-extrabold">{summary.unanswered_count}</p>
+              <p className="mt-1 text-2xl font-extrabold sm:mt-3 sm:text-3xl">{summary.unanswered_count}</p>
               <p className="text-sm font-bold">Sin responder</p>
             </button>
-            <div className="rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)]">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-[#c6f7f0] text-[#0b6b5c]">
+            <div className="rounded-2xl bg-gradient-to-br from-[#514ddd] to-[#4034ae] p-4 text-white shadow-sm">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-white/20 text-white">
                 <Percent aria-hidden="true" className="size-5" />
               </span>
               <p className="mt-3 text-3xl font-extrabold">{formatRate(summary.response_rate)}</p>
@@ -127,7 +127,7 @@ export default function RestaurantReviewsPage() {
         <h2 id="restaurant-reviews-title" className="sr-only">
           Lista de reseñas
         </h2>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
           <div role="group" aria-label="Filtrar por respuesta" className="flex flex-wrap gap-1 rounded-full bg-[#eef0ff] p-1">
             {TABS.map((option) => {
               const active = tab === option.value;

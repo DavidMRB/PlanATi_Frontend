@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import Link from "next/link";
+import { listFavorites } from "@/lib/favorites-api";
+import { listPlans } from "@/lib/plans-api";
 import LogoutButton from "@/components/common/LogoutButton";
 import MyReviewsList from "@/components/reviews/MyReviewsList";
 import PrivacySettings from "@/components/privacy/PrivacySettings";
@@ -42,9 +45,9 @@ type ProfileForm = {
 
 const toPhoneDigits = (phone?: string | null) => (phone ?? "").replace(/\D/g, "").slice(-10);
 
-const card = "rounded-3xl bg-white p-6 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-8";
+const card = "rounded-3xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-8";
 const fieldShell =
-  "flex h-14 items-center gap-3 rounded-2xl bg-[#eef2ff] px-4 text-[#17243d] ring-2 ring-transparent transition focus-within:ring-[#6868e8]/40";
+  "flex h-14 min-w-0 items-center gap-3 rounded-2xl bg-[#eef2ff] px-4 text-[#17243d] ring-2 ring-transparent transition focus-within:ring-[#6868e8]/40";
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -233,7 +236,7 @@ export default function UserProfilePage() {
             <>
               {/* Resumen */}
               <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#eef0ff,#e3f8f6)] p-6 sm:p-8">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:flex-wrap sm:text-left">
                   <span className="relative flex size-28 shrink-0 items-center justify-center rounded-2xl bg-white shadow-md">
                     {profile.picture ? (
                       // eslint-disable-next-line @next/next/no-img-element -- URL de R2 o Google
@@ -279,10 +282,11 @@ export default function UserProfilePage() {
                     </div>
                     <p className="text-sm text-[#6d6e7a]">{profile.email}</p>
                   </div>
+                  {profile.role === "user" && phoneVerified && <ProfileActivity key={profile.id} />}
                 </div>
               </section>
 
-              <div className="grid items-start gap-6 lg:grid-cols-[1fr_26rem]">
+              <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
                 {/* Información general */}
                 <form onSubmit={handleSubmit} className={`${card} space-y-6`} noValidate>
                   <div>
@@ -337,7 +341,7 @@ export default function UserProfilePage() {
                   <label className="block space-y-2">
                     <span className="flex items-center justify-between text-sm font-bold">
                       Nombre completo
-                      <span className="text-xs font-medium text-[#6d6e7a]">Visible en tus reservaciones</span>
+                      <span className="text-xs font-medium text-[#6d6e7a]">Visible en tu perfil</span>
                     </span>
                     <span className={fieldShell}>
                       <IdCard aria-hidden="true" className="size-5 text-[#81869a]" />
@@ -401,7 +405,7 @@ export default function UserProfilePage() {
 
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                     <LogoutButton />
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={discardChanges}
@@ -440,7 +444,7 @@ export default function UserProfilePage() {
                         Seguridad de la cuenta
                       </h2>
                       <ul className="space-y-3 text-sm">
-                        <li className="flex items-center justify-between rounded-xl bg-[#f3f5ff] px-4 py-3">
+                        <li className="flex flex-wrap items-center justify-between gap-1 rounded-xl bg-[#f3f5ff] px-4 py-3">
                           <span className="text-[#43506a]">Correo</span>
                           <span className="truncate pl-3 font-semibold">{profile.email}</span>
                         </li>
@@ -479,5 +483,29 @@ export default function UserProfilePage() {
         </div>
       </main>
     </>
+  );
+}
+
+function ProfileActivity() {
+  const [plans, setPlans] = useState<number | null>(null);
+  const [favorites, setFavorites] = useState<number | null>(null);
+  useEffect(() => {
+    let active = true;
+    void listPlans({ status: "SCHEDULED", limit: 1 }).then(page => {
+      if (active && page) setPlans(page.total);
+    }).catch(() => {});
+    void listFavorites({ limit: 1 }).then(page => {
+      if (active && page) setFavorites(page.total);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+  return (
+    <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:w-auto">
+      {[{ count: plans, label: "Próximos planes", href: "/plans" }, { count: favorites, label: "Lugares favoritos", href: "/favorites" }].map(({ count, label, href }) =>
+        <Link key={href} href={href} className="rounded-xl bg-white px-4 py-3 text-center text-xs text-[#43506a] hover:bg-[#f8f9ff]">
+          <strong className="block text-2xl text-[#514ddd]">{count ?? "—"}</strong>{label}
+        </Link>
+      )}
+    </div>
   );
 }

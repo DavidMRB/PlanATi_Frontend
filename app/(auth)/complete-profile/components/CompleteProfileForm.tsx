@@ -308,7 +308,7 @@ export default function CompleteProfileForm() {
     }
   };
 
-  const card = "rounded-3xl bg-white p-6 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-8";
+  const card = "rounded-3xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-8";
   const canSubmit =
     !isProfileLoading && !isSendingCode && !isUploadingImage && !!username.trim() && !!profileImage && phoneIsValid;
   const formattedPhone = phone ? `${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`.trim() : "";
@@ -333,8 +333,7 @@ export default function CompleteProfileForm() {
           </span>
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">Completa tu perfil</h1>
           <p className="max-w-2xl text-base text-[#43506a]">
-            Personaliza tu cuenta en PlanATi para acceder a reservas en tiempo real, planes gastronómicos y
-            experiencias exclusivas.
+            Completa tus datos para guardar tus lugares favoritos y organizar planes en Cúcuta.
           </p>
         </div>
 
@@ -344,11 +343,11 @@ export default function CompleteProfileForm() {
           </p>
         )}
 
-        <div className="grid items-start gap-6 lg:grid-cols-[1fr_28rem]">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <form onSubmit={handleSubmit} noValidate className="space-y-6">
             {/* 1. Fotografía */}
             <section className={`${card} space-y-5`}>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="flex items-center gap-3 text-xl font-extrabold">
                   <Camera aria-hidden="true" className="size-6 text-[#514ddd]" />
                   1. Fotografía de perfil
@@ -424,7 +423,7 @@ export default function CompleteProfileForm() {
 
             {/* 2. Nombre de usuario */}
             <section className={`${card} space-y-4`}>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="flex items-center gap-3 text-xl font-extrabold">
                   <AtSign aria-hidden="true" className="size-6 text-[#514ddd]" />
                   2. Nombre de usuario
@@ -460,7 +459,7 @@ export default function CompleteProfileForm() {
 
             {/* 3. Teléfono */}
             <section className={`${card} space-y-4`}>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="flex items-center gap-3 text-xl font-extrabold">
                   <Smartphone aria-hidden="true" className="size-6 text-[#514ddd]" />
                   3. Número telefónico (Colombia)
@@ -475,10 +474,10 @@ export default function CompleteProfileForm() {
                 </span>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="flex flex-1 gap-3">
+                <div className="flex min-w-0 flex-1 gap-2">
                   <span className="flex h-14 items-center rounded-2xl bg-[#eef2ff] px-4 text-sm font-bold">+57</span>
                   <label
-                    className={`flex h-14 flex-1 items-center gap-3 rounded-2xl bg-[#eef2ff] px-4 transition focus-within:ring-2 focus-within:ring-[#6868e8]/30 ${
+                    className={`flex h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl bg-[#eef2ff] px-4 transition focus-within:ring-2 focus-within:ring-[#6868e8]/30 ${
                       phoneTouched && !phoneIsValid ? "ring-2 ring-red-500" : ""
                     }`}
                   >
@@ -547,7 +546,7 @@ export default function CompleteProfileForm() {
               </p>
             )}
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <button
                 type="button"
                 onClick={() => router.back()}
@@ -572,7 +571,7 @@ export default function CompleteProfileForm() {
             <section className="overflow-hidden rounded-3xl bg-white shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
               <div aria-hidden="true" className="h-1.5 bg-[linear-gradient(90deg,#514ddd,#0b6b5c)]" />
               <div className="space-y-5 p-6 sm:p-8">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="flex items-center gap-3 text-xl font-extrabold">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-[#eef0ff] text-[#514ddd]">
                       <MessageSquare aria-hidden="true" className="size-5" />

@@ -14,6 +14,7 @@ type RatingSummaryProps = {
   // Estrellas elegidas para filtrar la lista (clic en una barra); null = todas.
   selectedRating?: number | null;
   onSelectRating?: (rating: number | null) => void;
+  variant?: "default" | "restaurant";
 };
 
 // Promedio, total, barras 5→1 (clic filtra la lista) y "#N en {categoría}".
@@ -25,11 +26,13 @@ export default function RatingSummary({
   category,
   selectedRating = null,
   onSelectRating,
+  variant = "default",
 }: RatingSummaryProps) {
   const formatted = formatRating(average);
+  const restaurantPanel = variant === "restaurant";
 
   return (
-    <div className="grid gap-6 rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)] sm:grid-cols-[auto_1fr] sm:items-center">
+    <div className={`grid rounded-2xl bg-white shadow-[0_4px_16px_rgba(23,36,61,0.06)] sm:grid-cols-[auto_1fr] sm:items-center ${restaurantPanel ? "gap-4 p-4 sm:gap-6 sm:p-5" : "gap-6 p-5"}`}>
       <div className="flex flex-col items-center gap-1.5 text-center sm:px-4">
         <p className="text-5xl font-extrabold tracking-tight">{formatted ?? "—"}</p>
         <StarRating value={average ?? 0} />
@@ -43,6 +46,8 @@ export default function RatingSummary({
         )}
       </div>
 
+      <div className="space-y-2">
+      {restaurantPanel && <p className="text-xs font-bold text-[#43506a]">Desglose de calificaciones</p>}
       <ul className="space-y-1.5" aria-label="Distribución de calificaciones">
         {[5, 4, 3, 2, 1].map((star) => {
           const amount = distribution[String(star)] ?? 0;
@@ -52,7 +57,7 @@ export default function RatingSummary({
             <>
               <span className="w-10 shrink-0 text-xs font-semibold text-[#43506a]">{star} ★</span>
               <span className="h-2 flex-1 overflow-hidden rounded-full bg-[#eef0ff]">
-                <span className="block h-full rounded-full bg-[#d6154a]" style={{ width: `${percent}%` }} />
+                <span className={`block h-full rounded-full ${restaurantPanel ? "bg-[#514ddd]" : "bg-[#d6154a]"}`} style={{ width: `${percent}%` }} />
               </span>
               <span className="w-8 shrink-0 text-right text-xs text-[#6d6e7a]">{amount}</span>
             </>
@@ -78,6 +83,7 @@ export default function RatingSummary({
           );
         })}
       </ul>
+      </div>
     </div>
   );
 }

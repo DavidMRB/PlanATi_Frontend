@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, ExternalLink, Flag, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, ExternalLink, Flag, Gavel, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useId, useState } from "react";
 import StarRating from "@/components/reviews/StarRating";
@@ -59,7 +59,7 @@ export default function ReportCard({ report, onChange }: { report: AdminReport; 
   const link = targetLink(report);
 
   return (
-    <li className="space-y-4 rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)]">
+    <li className="flex min-w-0 flex-col gap-4 rounded-2xl bg-white p-4 shadow-[0_4px_16px_rgba(23,36,61,0.06)] sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
@@ -72,7 +72,7 @@ export default function ReportCard({ report, onChange }: { report: AdminReport; 
               </span>
             )}
           </div>
-          <p className="text-sm">
+          <p className="break-words text-sm">
             <span className="font-bold">{REPORT_REASON_LABEL[report.reason as ReportReason] ?? report.reason}</span>
             <span className="text-[#6d6e7a]">
               {" "}
@@ -93,7 +93,7 @@ export default function ReportCard({ report, onChange }: { report: AdminReport; 
         )}
       </div>
 
-      <div className="space-y-2 rounded-xl bg-[#f8f9ff] p-4 text-sm">
+      <div className="flex-1 space-y-2 rounded-xl bg-[#eef2ff] p-4 text-sm">
         {!preview.exists ? (
           <p className="italic text-[#6d6e7a]">El contenido ya no existe. Puedes cerrar el reporte sin acción o descartarlo.</p>
         ) : (
@@ -126,11 +126,11 @@ export default function ReportCard({ report, onChange }: { report: AdminReport; 
       )}
 
       {open && (
-        <div className="flex flex-wrap gap-2 border-t border-[#f0f2f8] pt-3">
+        <div className="grid gap-2 border-t border-[#f0f2f8] pt-3 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => setDialog("resolve")}
-            className="flex items-center gap-1.5 rounded-lg bg-[#514ddd] px-3 py-2 text-xs font-bold text-white hover:bg-[#4542ca]"
+            className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-[#514ddd] px-3 py-2 text-xs font-bold text-white hover:bg-[#4542ca]"
           >
             <CheckCircle2 aria-hidden="true" className="size-4" />
             Resolver
@@ -138,7 +138,7 @@ export default function ReportCard({ report, onChange }: { report: AdminReport; 
           <button
             type="button"
             onClick={() => setDialog("dismiss")}
-            className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200"
+            className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-[#e3f7f3] px-3 py-2 text-xs font-bold text-[#0b6b5c] hover:bg-emerald-100 sm:order-first"
           >
             <XCircle aria-hidden="true" className="size-4" />
             Descartar
@@ -216,8 +216,9 @@ function ResolveReportModal({
   };
 
   return (
-    <Modal title="Resolver reporte" onClose={busy ? () => undefined : onClose} widthClass="max-w-xl">
+    <Modal title="Confirmar resolución de reporte" onClose={busy ? () => undefined : onClose} widthClass="max-w-xl" blurBackdrop titleIcon={<span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#eef0ff] text-[#514ddd]"><Gavel aria-hidden="true" className="size-5" /></span>}>
       <div className="space-y-5">
+        <p className="rounded-xl bg-[#eef0ff] px-3 py-2 text-sm text-[#43506a]">Reporte #{report.id} · {TARGET_TYPE_LABEL[report.target_type] ?? report.target_type}</p>
         <fieldset className="space-y-2">
           <legend className="text-sm font-semibold">Acción</legend>
           {actions.map((value) => (
@@ -264,6 +265,7 @@ function ResolveReportModal({
             maxLength={REASON_MAX}
             value={note}
             onChange={(event) => setNote(event.target.value)}
+            placeholder="Escribe una nota sobre la resolución."
             className="w-full rounded-xl bg-[#eef2ff] px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-[#6868e8]/40"
           />
         </div>
@@ -286,7 +288,7 @@ function ResolveReportModal({
           className="flex items-center gap-2 rounded-xl bg-[#514ddd] px-4 py-2 text-sm font-bold text-white hover:bg-[#4542ca] disabled:opacity-50"
         >
           {busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
-          Resolver
+          Confirmar resolución
         </button>
       </div>
     </Modal>

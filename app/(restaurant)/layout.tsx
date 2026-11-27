@@ -171,17 +171,17 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f9ff] text-[#17243d] md:flex-row">
-      <aside className="hidden border-r border-[#e4e6f0] bg-white p-5 md:block md:w-64 md:shrink-0">
+      <aside className="hidden border-r border-[#e4e6f0] bg-white p-3 md:sticky md:top-0 md:block md:h-dvh md:w-48 md:shrink-0 md:self-start md:overflow-y-auto lg:w-52 xl:w-60 xl:p-5">
         <div className="space-y-6">
           <div className="flex items-center gap-2">
             <BrandMark compact />
             <div className="leading-tight">
-              <p className="text-xl font-extrabold tracking-tight text-[#514ddd]">PlanATi</p>
+              <p className="whitespace-nowrap text-lg font-extrabold tracking-tight text-[#514ddd] xl:text-xl">PlanATi</p>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#0b6b5c]">Aliados</p>
             </div>
           </div>
           <div className="space-y-2 rounded-2xl bg-[#eef2ff] p-4">
-            <p className="truncate text-sm font-bold">{restaurant?.name}</p>
+            <p className="break-words text-sm font-bold">{restaurant?.name}</p>
             <span
               className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${ESTABLISHMENT_STATUS_CLASS[status]}`}
             >
@@ -233,6 +233,8 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
           current={currentLabel}
           userSubtitle={restaurant?.name}
           userLinks={[
+            { href: "/restaurant/schedules", label: "Horarios" },
+            { href: "/restaurant/combos", label: "Combos y promociones" },
             { href: "/", label: "Ir al sitio" },
             ...(restaurant ? [{ href: `/establishments/${restaurant.establishment_id}`, label: "Ver mi ficha pública" }] : []),
           ]}
@@ -245,7 +247,7 @@ export default function RestaurantLayout({ children }: { children: ReactNode }) 
             ) : null
           }
         />
-        <section className="flex-1 p-5 sm:p-8">{children}</section>
+        <section className="mx-auto w-full min-w-0 max-w-[96rem] flex-1 px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:py-6 xl:px-8">{children}</section>
       </div>
 
       <BottomTabBar items={TAB_ITEMS} label="Navegación del establecimiento" />

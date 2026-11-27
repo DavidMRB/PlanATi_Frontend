@@ -23,7 +23,7 @@ type AreaTopBarProps = {
 // (la barra lateral se oculta y la navegación pasa a la barra inferior); desde md, la ruta de migas.
 export default function AreaTopBar({ badge, portal, current, userSubtitle, status, userLinks }: AreaTopBarProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-[#e4e6f0] bg-white/90 px-4 backdrop-blur sm:px-8 md:h-16">
+    <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b border-[#e4e6f0] bg-white/90 px-4 backdrop-blur sm:px-5 xl:px-8 md:min-h-16">
       <div className="flex items-center gap-2 md:hidden">
         <BrandMark compact />
         <span className="text-lg font-extrabold tracking-tight text-[#514ddd]">PlanATi</span>
@@ -32,7 +32,7 @@ export default function AreaTopBar({ badge, portal, current, userSubtitle, statu
         </span>
       </div>
 
-      <nav aria-label="Ruta" className="hidden items-center gap-2 text-sm md:flex">
+      <nav aria-label="Ruta" className="hidden min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 py-2 text-sm md:flex">
         <span className="text-[#43506a]">{portal}</span>
         <span aria-hidden="true" className="text-[#c9cdf4]">
           /
@@ -40,7 +40,7 @@ export default function AreaTopBar({ badge, portal, current, userSubtitle, statu
         <span className="font-semibold text-[#514ddd]">{current}</span>
       </nav>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         {status}
         <NotificationsBell />
         <UserMenu subtitle={userSubtitle} links={userLinks} />

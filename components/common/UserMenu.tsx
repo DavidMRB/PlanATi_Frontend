@@ -41,6 +41,7 @@ export default function UserMenu({ subtitle, links }: UserMenuProps) {
     <div ref={ref} className="relative">
       <button
         type="button"
+        aria-label={`Menú de ${name}`}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}

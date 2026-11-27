@@ -21,7 +21,7 @@ import { StaticLocationMap } from "@/components/map/lazy";
 import AddToCalendarMenu from "@/components/plans/AddToCalendarMenu";
 import PlanStatusBadge from "@/components/plans/PlanStatusBadge";
 import Modal from "@/components/ui/Modal";
-import { formatDateTime } from "@/lib/datetime";
+import { formatDate, formatTime } from "@/lib/datetime";
 import { formatCop } from "@/lib/format";
 import { directionsUrl, mapsSearchUrl, toLatLng } from "@/lib/geo";
 import {
@@ -41,7 +41,7 @@ export default function PlanDetailPage({ params }: { params: Promise<{ id: strin
   const planId = Number(id);
   return (
     <main className="min-h-screen bg-[#f8f9ff] pb-24 text-[#17243d] md:pb-10">
-      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-5 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <Link href="/plans" className="inline-flex items-center gap-2 text-sm font-semibold text-[#514ddd]">
           <ArrowLeft aria-hidden="true" className="size-4" />
           Mis planes
@@ -154,30 +154,24 @@ function PlanView({ planId }: { planId: number }) {
         </Banner>
       )}
 
-      <section className={`${card} space-y-5`}>
+      <section className={`${card} space-y-4`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-2">
+          <div className="relative w-full min-w-0 space-y-2 overflow-hidden rounded-xl bg-[#292661] p-4 text-white md:w-auto md:overflow-visible md:rounded-none md:bg-transparent md:p-0 md:text-[#17243d]">
+            {plan.establishment.profile_image_url && (
+              // eslint-disable-next-line @next/next/no-img-element -- Imagen del establecimiento
+              <img src={plan.establishment.profile_image_url} alt="" className="pointer-events-none absolute inset-0 size-full object-cover md:hidden" />
+            )}
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#17243d] to-[#17243d]/40 md:hidden" />
+            <div className="relative space-y-2 pt-16 md:pt-0">
             <PlanStatusBadge status={plan.status} />
             <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${plan.status === "CANCELLED" ? "text-[#81869a] line-through" : ""}`}>
               {plan.title}
             </h1>
+            <p className="text-sm font-semibold md:text-[#43506a]">{plan.establishment.name}</p>
+            </div>
           </div>
           {plan.status !== "CANCELLED" && <AddToCalendarMenu plan={plan} align="right" />}
         </div>
-        <ul className="grid gap-3 text-sm sm:grid-cols-3">
-          <InfoItem icon={CalendarDays}>
-            <span className="first-letter:uppercase">{formatDateTime(plan.scheduled_at)}</span>
-          </InfoItem>
-          <InfoItem icon={Users}>
-            {plan.party_size} {plan.party_size === 1 ? "persona" : "personas"}
-          </InfoItem>
-          <InfoItem icon={Bell}>
-            {plan.reminder_minutes_before ? REMINDER_LABEL[plan.reminder_minutes_before] : "Sin recordatorio"}
-            {plan.reminder_sent_at ? " (enviado)" : ""}
-          </InfoItem>
-        </ul>
-        {plan.notes && <p className="whitespace-pre-line rounded-xl bg-[#f3f5ff] px-4 py-3 text-sm text-[#43506a]">{plan.notes}</p>}
-
         <div className="flex flex-wrap gap-2 border-t border-[#eceef7] pt-4">
           {editable && plan.establishment_available && (
             <Link
@@ -218,43 +212,66 @@ function PlanView({ planId }: { planId: number }) {
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <section className={`${card} space-y-4`}>
-          <h2 className="text-lg font-extrabold">Menú del plan</h2>
-          {plan.items.length === 0 ? (
-            <p className="text-sm text-[#6d6e7a]">No elegiste platos para este plan.</p>
-          ) : (
-            <ul className="divide-y divide-[#eceef7]">
-              {plan.items.map((item) => (
-                <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
-                  <div className="min-w-0">
-                    <p className="font-semibold">
-                      {item.quantity}× {item.name}
-                    </p>
-                    <p className="text-xs text-[#6d6e7a]">{formatCop(item.unit_price)} c/u</p>
-                    {item.notes && <p className="text-xs italic text-[#6d6e7a]">“{item.notes}”</p>}
-                    {item.price_changed && (
-                      <p className="text-xs font-semibold text-amber-700">
-                        {item.current_price === null ? "Ya no está disponible" : `Precio actual: ${formatCop(item.current_price)}`}
-                      </p>
-                    )}
-                  </div>
-                  <span className="shrink-0 font-bold">{formatCop(item.subtotal)}</span>
-                </li>
-              ))}
+      <div className="grid items-start gap-5 md:grid-cols-[minmax(0,3fr)_minmax(16rem,2fr)]">
+        <div className="min-w-0 space-y-5">
+          <section className={`${card} space-y-4`}>
+            <h2 className="flex items-center gap-2 text-lg font-extrabold"><CalendarDays aria-hidden="true" className="size-5 text-[#514ddd]" /> Detalles de la visita</h2>
+            <ul className="grid grid-cols-2 gap-2 text-sm md:grid-cols-3">
+              <InfoItem icon={CalendarDays} label="Fecha">
+                <span className="first-letter:uppercase">{formatDate(plan.scheduled_at, { year: undefined, weekday: "short", month: "short" })}</span>
+              </InfoItem>
+              <InfoItem icon={CalendarDays} label="Hora">{formatTime(plan.scheduled_at)}</InfoItem>
+              <InfoItem icon={Users} label="Personas">
+                {plan.party_size} {plan.party_size === 1 ? "persona" : "personas"}
+              </InfoItem>
+              <InfoItem icon={Bell} label="Recordatorio">
+                {plan.reminder_minutes_before ? REMINDER_LABEL[plan.reminder_minutes_before] : "Sin recordatorio"}
+                {plan.reminder_sent_at ? " (enviado)" : ""}
+              </InfoItem>
             </ul>
-          )}
-          {total > 0 && (
-            <div className="flex items-baseline justify-between border-t border-[#eceef7] pt-3">
-              <span className="text-sm font-semibold text-[#43506a]">Total estimado</span>
-              <span className="text-xl font-extrabold text-[#514ddd]">{formatCop(total)}</span>
-            </div>
-          )}
-          <p className="text-xs text-[#6d6e7a]">El total es estimado; el establecimiento puede cambiar sus precios.</p>
-        </section>
+            {plan.notes && <div className="rounded-xl bg-[#f3f5ff] px-4 py-3 text-sm text-[#43506a]"><p className="mb-1 text-xs font-bold uppercase">Notas</p><p className="whitespace-pre-line">{plan.notes}</p></div>}
+          </section>
+          <section className={`${card} space-y-4`}>
+            <h2 className="text-lg font-extrabold">Productos y combos del plan</h2>
+            {plan.items.length === 0 ? (
+              <p className="text-sm text-[#6d6e7a]">No elegiste platos para este plan.</p>
+            ) : (
+              <ul className="divide-y divide-[#eceef7]">
+                {plan.items.map((item) => (
+                  <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-semibold">
+                        <span className="mr-2 inline-flex rounded-lg bg-[#eef0ff] px-2 py-1 text-xs font-bold text-[#514ddd]">{item.quantity}×</span>{item.name}
+                      </p>
+                      <p className="text-xs text-[#6d6e7a]">{formatCop(item.unit_price)} c/u</p>
+                      {item.notes && <p className="text-xs italic text-[#6d6e7a]">“{item.notes}”</p>}
+                      {item.price_changed && (
+                        <p className="text-xs font-semibold text-amber-700">
+                          {item.current_price === null ? "Ya no está disponible" : `Precio actual: ${formatCop(item.current_price)}`}
+                        </p>
+                      )}
+                    </div>
+                    <span className="shrink-0 font-bold">{formatCop(item.subtotal)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {total > 0 && (
+              <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-[#514ddd] p-4 text-white sm:bg-[#eef0ff] sm:text-[#514ddd]">
+                <span className="text-sm font-semibold">Total estimado</span>
+                <span className="text-2xl font-extrabold">{formatCop(total)}</span>
+              </div>
+            )}
+            <p className="text-xs text-[#6d6e7a]">El total es estimado; el establecimiento puede cambiar sus precios.</p>
+          </section>
+        </div>
 
         <section className={`${card} space-y-4`}>
-          <h2 className="text-lg font-extrabold">Lugar</h2>
+          <h2 className="flex items-center gap-2 text-lg font-extrabold"><Navigation aria-hidden="true" className="size-4 text-[#514ddd]" /> Ubicación</h2>
+          {plan.establishment.profile_image_url && (
+            // eslint-disable-next-line @next/next/no-img-element -- Imagen del establecimiento
+            <img src={plan.establishment.profile_image_url} alt="" className="hidden h-36 w-full rounded-xl object-cover md:block" />
+          )}
           <Link href={`/establishments/${plan.establishment.id}`} className="block font-bold text-[#514ddd] hover:underline">
             {plan.establishment.name}
           </Link>
@@ -320,11 +337,11 @@ function PlanView({ planId }: { planId: number }) {
   );
 }
 
-function InfoItem({ icon: Icon, children }: { icon: typeof CalendarDays; children: ReactNode }) {
+function InfoItem({ icon: Icon, label, children }: { icon: typeof CalendarDays; label: string; children: ReactNode }) {
   return (
     <li className="flex items-start gap-2 rounded-xl bg-[#f3f5ff] px-4 py-3 font-semibold text-[#26344d]">
       <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-[#514ddd]" />
-      <span>{children}</span>
+      <div><p className="mb-0.5 text-xs text-[#6d6e7a]">{label}</p>{children}</div>
     </li>
   );
 }

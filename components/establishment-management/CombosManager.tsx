@@ -1,7 +1,7 @@
 "use client";
 
 import { Package, Pencil, PlusCircle, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import ComboModal from "@/components/restaurant/ComboModal";
 import { formatCop } from "@/lib/format";
 import type { MenuItem } from "@/lib/restaurant-api";
@@ -13,7 +13,7 @@ const card = "rounded-3xl bg-white shadow-[0_8px_24px_rgba(23,36,61,0.06)]";
 
 const isBundle = (combo: MenuItem) => combo.combo_items.length > 0;
 
-export default function CombosManager({ api }: { api: EstablishmentManagementApi }) {
+export default function CombosManager({ api, exportAction }: { api: EstablishmentManagementApi; exportAction?: ReactNode }) {
   const [combos, setCombos] = useState<MenuItem[] | null>(null);
   const [products, setProducts] = useState<MenuItem[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
@@ -130,14 +130,17 @@ export default function CombosManager({ api }: { api: EstablishmentManagementApi
                 inventario e impulsan los pedidos para grupos y parejas.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#514ddd] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca]"
-            >
-              <PlusCircle aria-hidden="true" className="size-5" />
-              Nuevo combo
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {exportAction}
+              <button
+                type="button"
+                onClick={openCreate}
+                className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#514ddd] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca]"
+              >
+                <PlusCircle aria-hidden="true" className="size-5" />
+                Nuevo combo
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-4 border-t border-[#eef0f8] pt-5 sm:flex-row sm:items-center sm:justify-between">

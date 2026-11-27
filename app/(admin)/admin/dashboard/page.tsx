@@ -16,16 +16,22 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ComponentType } from "react";
-import { getAdminDashboard, type AdminDashboard } from "@/lib/admin-api";
+import { getAdminDashboard, listAdminEstablishments, type AdminEstablishmentListItem, type AdminDashboard } from "@/lib/admin-api";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminDashboard | null>(null);
+  const [pending, setPending] = useState<AdminEstablishmentListItem[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let active = true;
+    listAdminEstablishments({ status: "PENDING", limit: 4 })
+      .then(items => { if (active) setPending(items ?? []); })
+      .catch(() => {});
     getAdminDashboard()
       .then((data) => setStats(data ?? null))
       .catch((loadError: unknown) => setError(loadError instanceof Error ? loadError.message : "No fue posible cargar el resumen."));
+    return () => { active = false; };
   }, []);
 
   return (
@@ -49,7 +55,7 @@ export default function AdminDashboardPage() {
             )}
           </Link>
           <Link
-            href="/admin/establishments?status=PENDING"
+            href="/admin/requests"
             className="inline-flex items-center justify-between gap-3 rounded-xl bg-[#514ddd] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_18px_rgba(81,77,221,0.24)] hover:bg-[#4542ca]"
           >
             Revisar solicitudes
@@ -95,7 +101,7 @@ export default function AdminDashboardPage() {
                 label="Solicitudes pendientes"
                 value={stats.pending_establishments}
                 iconTone="bg-[#fde0e3] text-[#d6154a]"
-                href="/admin/establishments?status=PENDING"
+                href="/admin/requests"
                 highlight={stats.pending_establishments > 0}
               />
               <StatCard
@@ -140,6 +146,23 @@ export default function AdminDashboardPage() {
               <StatCard icon={CalendarDays} label="Planes programados" value={stats.scheduled_plans} iconTone="bg-[#c6f7f0] text-[#0b6b5c]" />
             </div>
           </section>
+
+          {pending.length > 0 && (
+            <section className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-xl font-bold">Solicitudes pendientes</h2>
+                <Link href="/admin/requests" className="text-sm font-semibold text-[#514ddd]">Ver todas</Link>
+              </div>
+              <ul className="divide-y divide-[#e4e6f0]">
+                {pending.map(item => <li key={item.id}>
+                  <Link href={"/admin/establishments/" + item.id + "?from=requests"} className="flex items-center justify-between gap-3 py-3 hover:text-[#514ddd]">
+                    <span><strong className="block">{item.name}</strong><span className="text-sm text-[#43506a]">{item.category} · {item.address}</span></span>
+                    <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+                  </Link>
+                </li>)}
+              </ul>
+            </section>
+          )}
 
           <section className="space-y-3">
             <h2 className="text-sm font-bold uppercase tracking-widest text-[#6d6e7a]">Moderación</h2>

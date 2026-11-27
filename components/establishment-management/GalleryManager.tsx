@@ -248,34 +248,29 @@ export default function GalleryManager({ api }: { api: EstablishmentManagementAp
       )}
 
       {images.length > 0 && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {images.map((image, index) => (
             <figure key={image.id} className={`${card} group overflow-hidden`}>
               <div className="relative aspect-[4/3] bg-[#eef0ff]">
                 {/* eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2 */}
                 <img src={image.image_url} alt={image.caption ?? tab.label} className="size-full object-cover" />
                 {index === 0 && (
-                  <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-[#514ddd] px-3 py-1 text-xs font-bold text-white">
+                  <span className="absolute left-2 top-2 max-w-[calc(100%-3.25rem)] flex items-center gap-1 rounded-full bg-[#514ddd] px-3 py-1 text-xs font-bold text-white">
                     <Star aria-hidden="true" className="size-3 fill-current" />
                     Foto principal
-                  </span>
-                )}
-                {image.caption && index !== 0 && (
-                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#17243d]">
-                    {image.caption}
                   </span>
                 )}
                 <button
                   type="button"
                   onClick={() => void handleDelete(image)}
                   aria-label="Eliminar foto"
-                  className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-red-600 opacity-100 shadow hover:bg-red-50 md:opacity-0 md:transition md:group-hover:opacity-100"
+                  className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-red-600 opacity-100 shadow hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-[#514ddd]"
                 >
                   <Trash2 aria-hidden="true" className="size-4" />
                 </button>
               </div>
-              <figcaption className="flex items-center justify-between gap-2 px-4 py-3">
-                <span className="truncate text-sm font-bold">{image.caption ?? `${tab.label} ${index + 1}`}</span>
+              <figcaption className="flex flex-wrap items-center justify-between gap-2 px-3 py-3">
+                <span className="text-sm font-bold">{image.caption ?? `${tab.label} ${index + 1}`}</span>
                 <span className="shrink-0 rounded-md bg-[#c6f7f0] px-2 py-0.5 text-[11px] font-bold text-[#0b6b5c]">
                   Publicada
                 </span>

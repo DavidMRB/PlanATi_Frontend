@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, Check, Loader2, MapPin } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, Loader2, MapPin, Minus, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { formatCop } from "@/lib/format";
@@ -14,7 +14,7 @@ import TimeSlotPicker from "./TimeSlotPicker";
 type PlanBuilderProps = { establishmentId: number; plan?: undefined } | { plan: PlanDetail; establishmentId?: undefined };
 
 const inputClass =
-  "w-full rounded-xl border border-[#d7dcf2] bg-white px-3 text-sm text-[#17243d] outline-none focus:ring-2 focus:ring-[#6868e8]/40";
+  "w-full rounded-xl border border-[#d7dcf2] bg-[#f5f6ff] px-3 text-sm text-[#17243d] outline-none focus:ring-2 focus:ring-[#6868e8]/40";
 const primaryButton =
   "flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#514ddd] px-5 text-sm font-bold text-white shadow-[0_10px_22px_rgba(81,77,221,0.3)] hover:bg-[#4542ca] disabled:opacity-60";
 
@@ -39,7 +39,7 @@ export default function PlanBuilder(props: PlanBuilderProps) {
   if (!detail) return <p className="py-10 text-center text-sm text-[#6d6e7a]">Cargando el lugar...</p>;
 
   const stepIndex = STEPS.findIndex((item) => item.id === step);
-  const isLast = step === "summary";
+  const isLast = Boolean(editing) || step === "summary";
   const action = (
     <button
       type="button"
@@ -53,18 +53,19 @@ export default function PlanBuilder(props: PlanBuilderProps) {
   );
 
   return (
-    <div className="grid gap-6 pb-28 lg:grid-cols-[minmax(0,1fr)_20rem] lg:pb-0">
+    <div className="grid items-start gap-5 pb-28 lg:grid-cols-[minmax(0,1fr)_21rem] lg:pb-0">
       <div className="min-w-0 space-y-6">
         <div className="flex items-center gap-4 rounded-3xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
           <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#eef0ff] text-[#514ddd]">
-            {detail.profile_image_url ? (
+            {(detail.banner_image_url || detail.profile_image_url) ? (
               // eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2
-              <img src={detail.profile_image_url} alt="" className="size-full object-cover" />
+              <img src={detail.banner_image_url ?? detail.profile_image_url ?? undefined} alt="" className="size-full object-cover" />
             ) : (
               <MapPin aria-hidden="true" className="size-6" />
             )}
           </span>
           <div className="min-w-0 flex-1">
+            {editing && <p className="mb-1 text-xs font-bold uppercase tracking-wide text-[#514ddd]">Establecimiento del plan</p>}
             <p className="truncate text-base font-bold text-[#17243d]">{detail.name}</p>
             <p className="truncate text-xs text-[#6d6e7a]">{detail.address}</p>
           </div>
@@ -75,24 +76,24 @@ export default function PlanBuilder(props: PlanBuilderProps) {
           )}
         </div>
 
-        <nav aria-label="Pasos del plan">
-          <ol className="flex gap-2 overflow-x-auto pb-1">
+        {!editing && <nav aria-label="Pasos del plan" className="rounded-2xl bg-white p-3">
+          <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {STEPS.map((item, index) => {
               const done = index < stepIndex;
               const current = index === stepIndex;
               return (
-                <li key={item.id} className="shrink-0">
+                <li key={item.id} className="min-w-0">
                   <button
                     type="button"
                     onClick={() => builder.goTo(item.id)}
                     aria-current={current ? "step" : undefined}
-                    className={`flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold transition ${
+                    className={`flex h-9 w-full items-center gap-2 rounded-xl px-2 text-left text-xs font-bold transition ${
                       current
                         ? "bg-[#514ddd] text-white"
                         : done
                           ? "bg-[#e3f7f3] text-[#0b6b5c]"
                           : "bg-[#eef0ff] text-[#43506a] hover:text-[#514ddd]"
-                    } ${errors[item.id] ? "ring-2 ring-red-300" : ""}`}
+                      } ${errors[item.id] ? "ring-2 ring-red-300" : ""}`}
                   >
                     <span className="flex size-5 items-center justify-center rounded-full bg-white/25">
                       {done ? <Check aria-hidden="true" className="size-3.5" /> : index + 1}
@@ -103,12 +104,12 @@ export default function PlanBuilder(props: PlanBuilderProps) {
               );
             })}
           </ol>
-        </nav>
+        </nav>}
 
-        <section className="space-y-5 rounded-3xl bg-white p-5 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-6">
-          {step === "when" && (
-            <>
-              <StepTitle title="¿Cuándo vas?" subtitle="Horas de Colombia, según los horarios del lugar." />
+        <div className="space-y-4">
+          {(editing || step === "when") && (
+            <section className="space-y-5 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-6">
+              <StepTitle title={editing ? "Fecha y hora de la visita" : "¿Cuándo vas?"} subtitle="Horas de Colombia, según los horarios del lugar." />
               {editing?.outside_schedule && (
                 <Warning>Con los horarios actuales el lugar ya no abre a la hora de este plan. Elige otra hora.</Warning>
               )}
@@ -120,13 +121,14 @@ export default function PlanBuilder(props: PlanBuilderProps) {
                 onTimeChange={builder.changeTime}
                 now={builder.now}
                 error={errors.when}
+                showDateStrip={Boolean(editing)}
               />
-            </>
+            </section>
           )}
 
-          {step === "menu" && (
-            <>
-              <StepTitle title="¿Qué vas a pedir?" subtitle="Opcional. Sirve para estimar cuánto vas a gastar." />
+          {(editing || step === "menu") && (
+            <section className="space-y-5 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-6">
+              <StepTitle title={editing ? "Combos y productos vinculados" : "¿Qué vas a pedir?"} subtitle="Opcional. Sirve para estimar cuánto vas a gastar." />
               {editing && builder.missingIds.length > 0 && (
                 <Warning>Algunos platos de este plan ya no están disponibles. Si cambias los platos, se quitarán.</Warning>
               )}
@@ -141,11 +143,11 @@ export default function PlanBuilder(props: PlanBuilderProps) {
                 invalidIds={builder.invalidIds}
               />
               {errors.menu && <ErrorText>{errors.menu}</ErrorText>}
-            </>
+            </section>
           )}
 
-          {step === "details" && (
-            <>
+          {(editing || step === "details") && (
+            <section className="space-y-5 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-6">
               <StepTitle title="Detalles" />
               <label className="block space-y-1.5">
                 <span className="text-sm font-semibold text-[#26344d]">Título</span>
@@ -158,18 +160,23 @@ export default function PlanBuilder(props: PlanBuilderProps) {
                   className={`${inputClass} h-11`}
                 />
               </label>
-              <label className="block space-y-1.5">
-                <span className="text-sm font-semibold text-[#26344d]">Personas</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={PLAN_LIMITS.maxPartySize}
-                  value={builder.partySize}
-                  onChange={(event) => builder.setPartySize(event.target.value)}
-                  className={`${inputClass} h-11 max-w-32`}
-                />
-              </label>
+              <div className="space-y-1.5">
+                <label htmlFor="plan-party-size" className="block text-sm font-semibold text-[#26344d]">Personas</label>
+                <div className="inline-flex items-center gap-1 rounded-xl bg-[#eef0ff] p-1">
+                  <button type="button" aria-label="Reducir número de personas" disabled={Number(builder.partySize) <= 1} onClick={() => builder.setPartySize(String(Math.max(1, Number(builder.partySize) - 1)))} className="grid size-9 place-items-center rounded-lg bg-white text-[#514ddd] disabled:opacity-50"><Minus aria-hidden="true" className="size-4" /></button>
+                  <input
+                    id="plan-party-size"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={PLAN_LIMITS.maxPartySize}
+                    value={builder.partySize}
+                    onChange={(event) => builder.setPartySize(event.target.value)}
+                    className="h-9 w-14 appearance-none rounded-lg bg-transparent text-center text-sm font-bold outline-none focus:ring-2 focus:ring-[#514ddd] [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button type="button" aria-label="Aumentar número de personas" disabled={Number(builder.partySize) >= PLAN_LIMITS.maxPartySize} onClick={() => builder.setPartySize(String(Math.min(PLAN_LIMITS.maxPartySize, Number(builder.partySize) + 1)))} className="grid size-9 place-items-center rounded-lg bg-[#514ddd] text-white disabled:opacity-50"><Plus aria-hidden="true" className="size-4" /></button>
+                </div>
+              </div>
               <label className="block space-y-1.5">
                 <span className="text-sm font-semibold text-[#26344d]">Recordatorio</span>
                 <ReminderSelect value={builder.reminder} onChange={builder.setReminder} scheduledAt={builder.scheduledAt} now={builder.now} />
@@ -187,11 +194,11 @@ export default function PlanBuilder(props: PlanBuilderProps) {
                 />
               </label>
               {errors.details && <ErrorText>{errors.details}</ErrorText>}
-            </>
+            </section>
           )}
 
-          {step === "summary" && (
-            <>
+          {!editing && step === "summary" && (
+            <section className="space-y-5 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-6">
               <StepTitle title="Revisa tu plan" />
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <SummaryItem label="Título" value={builder.title.trim() || `Plan en ${detail.name}`} />
@@ -220,11 +227,14 @@ export default function PlanBuilder(props: PlanBuilderProps) {
               )}
               <p className="text-xs text-[#6d6e7a]">El total es estimado; el establecimiento puede cambiar sus precios.</p>
               {errors.summary && <ErrorText>{errors.summary}</ErrorText>}
-            </>
+            </section>
           )}
 
-          <div className="flex items-center justify-between gap-3 border-t border-[#eceef7] pt-4">
-            {stepIndex > 0 ? (
+          {editing && errors.summary && <ErrorText>{errors.summary}</ErrorText>}
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-[0_4px_16px_rgba(23,36,61,0.06)]">
+            {editing ? (
+              <Link href={`/plans/${editing.id}`} className="rounded-xl bg-[#eef0ff] px-3 py-2.5 text-sm font-bold text-[#514ddd]">Descartar cambios</Link>
+            ) : stepIndex > 0 ? (
               <button type="button" onClick={builder.back} className="flex items-center gap-1.5 text-sm font-semibold text-[#514ddd]">
                 <ArrowLeft aria-hidden="true" className="size-4" />
                 Atrás
@@ -234,11 +244,12 @@ export default function PlanBuilder(props: PlanBuilderProps) {
             )}
             <div className="hidden lg:block">{action}</div>
           </div>
-        </section>
+        </div>
       </div>
 
       <PlanSummary
         establishmentName={detail.name}
+        coverImage={detail.banner_image_url ?? detail.profile_image_url}
         when={builder.whenLabel}
         partySize={Number(builder.partySize) || 1}
         lines={builder.lines}

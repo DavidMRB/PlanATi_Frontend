@@ -59,15 +59,15 @@ export default function ModerationReviewCard({ review, onChange, as = "li" }: Mo
   return (
     <Tag
       id={`admin-review-${review.id}`}
-      className={`space-y-4 rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)] ${
+      className={`min-w-0 space-y-4 rounded-2xl bg-white p-4 sm:p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)] ${
         review.flagged_for_review || reply?.flagged_for_review ? "ring-2 ring-amber-300" : ""
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 max-w-full items-center gap-3">
           <Avatar user={{ full_name: review.author.full_name, picture: review.author.picture }} className="size-10" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold">
+            <p className="break-words text-sm font-bold">
               <Link href={`/admin/users/${review.author.id}`} className="hover:underline">
                 {review.author.full_name}
               </Link>
@@ -76,7 +76,7 @@ export default function ModerationReviewCard({ review, onChange, as = "li" }: Mo
                 <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-700">Suspendido</span>
               )}
             </p>
-            <p className="truncate text-xs text-[#6d6e7a]">
+            <p className="break-words text-xs text-[#6d6e7a]">
               {review.author.email} · en{" "}
               <Link href={`/admin/establishments/${review.establishment.id}`} className="font-semibold text-[#514ddd] hover:underline">
                 {review.establishment.name}
