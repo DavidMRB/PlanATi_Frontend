@@ -3,7 +3,7 @@
 import { AlertTriangle, Moon } from "lucide-react";
 import { useMemo } from "react";
 import { DAY_NAMES } from "@/components/establishment-management/schedules";
-import { toDateKey, weekdayOfKey } from "@/lib/datetime";
+import { addDaysToKey, toDateKey, weekdayOfKey } from "@/lib/datetime";
 import type { EstablishmentSchedule } from "@/lib/establishments-api";
 import { isClosedAllDay, lastPlanDateKey, slotsForDate } from "./slots";
 
@@ -15,6 +15,7 @@ type TimeSlotPickerProps = {
   onTimeChange: (time: string) => void;
   now: number;
   error?: string;
+  showDateStrip?: boolean;
 };
 
 const inputClass =
@@ -22,8 +23,9 @@ const inputClass =
 
 // Fecha + franjas de 30 min según los horarios del local (hora de Colombia, con tramos que cruzan la
 // medianoche). Si el local no publicó horarios, la hora es libre (el backend no la restringe).
-export default function TimeSlotPicker({ schedules, date, time, onDateChange, onTimeChange, now, error }: TimeSlotPickerProps) {
+export default function TimeSlotPicker({ schedules, date, time, onDateChange, onTimeChange, now, error, showDateStrip = false }: TimeSlotPickerProps) {
   const today = toDateKey(now);
+  const lastDate = lastPlanDateKey(today);
   const hasSchedules = schedules.length > 0;
   const slots = useMemo(() => (date && hasSchedules ? slotsForDate(schedules, date, now) : []), [date, hasSchedules, schedules, now]);
   const closedDays = useMemo(
@@ -33,6 +35,8 @@ export default function TimeSlotPicker({ schedules, date, time, onDateChange, on
   const weekday = date ? weekdayOfKey(date) : null;
   const closedThatDay = weekday !== null && closedDays[weekday];
   const openDayNames = DAY_NAMES.filter((_, index) => !closedDays[index]);
+  const stripStart = date && addDaysToKey(date, -2) > today ? addDaysToKey(date, -2) : today;
+  const quickDates = Array.from({ length: 5 }, (_, index) => addDaysToKey(stripStart, index)).filter((day) => day <= lastDate);
 
   return (
     <div className="space-y-4">
@@ -42,11 +46,21 @@ export default function TimeSlotPicker({ schedules, date, time, onDateChange, on
           type="date"
           value={date}
           min={today}
-          max={lastPlanDateKey(today)}
+          max={lastDate}
           onChange={(event) => onDateChange(event.target.value)}
           className={inputClass}
         />
       </label>
+      {showDateStrip && (
+        <div role="group" aria-label="Fechas cercanas" className="grid grid-cols-5 gap-1.5">
+          {quickDates.map((key) => (
+            <button key={key} type="button" aria-pressed={date === key} aria-label={key} onClick={() => onDateChange(key)} className={`grid min-h-14 place-content-center rounded-xl px-1 py-1.5 text-center ${date === key ? "bg-[#514ddd] text-white" : "bg-[#eef0ff] text-[#43506a] hover:bg-[#e2e5ff]"}`}>
+              <span className="text-[10px] font-semibold uppercase">{DAY_NAMES[weekdayOfKey(key)].slice(0, 3)}</span>
+              <span className="text-lg leading-tight font-extrabold">{key.slice(-2)}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {hasSchedules && openDayNames.length < 7 && (
         <p className="text-xs text-[#6d6e7a]">Abre: {openDayNames.join(", ").toLowerCase()}.</p>
       )}

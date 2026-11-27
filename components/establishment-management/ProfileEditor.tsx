@@ -194,9 +194,12 @@ export default function ProfileEditor({ api }: { api: EstablishmentManagementApi
     setMessage("");
   };
 
+  const adminMode = api.mode === "admin";
+  const Heading = adminMode ? "h2" : "h1";
+
   return (
     <div className="space-y-8 pb-24 lg:pb-0">
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <header className={`flex flex-col gap-5 ${adminMode ? "" : "lg:flex-row lg:items-end lg:justify-between"}`}>
         <div className="space-y-2">
           {api.mode === "restaurant" && (
             <nav aria-label="Ruta" className="flex items-center gap-2 text-xs text-[#6d6e7a]">
@@ -207,7 +210,7 @@ export default function ProfileEditor({ api }: { api: EstablishmentManagementApi
           )}
           <p className="text-xs font-bold uppercase tracking-widest text-[#0b6b5c]">Identidad comercial pública</p>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-extrabold sm:text-4xl">Perfil del establecimiento</h1>
+            <Heading className={adminMode ? "text-xl font-extrabold sm:text-2xl" : "text-3xl font-extrabold sm:text-4xl"}>Perfil del establecimiento</Heading>
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ESTABLISHMENT_STATUS_CLASS[profile.status]}`}>{ESTABLISHMENT_STATUS_LABEL[profile.status]}</span>
           </div>
           <p className="max-w-2xl text-base text-[#6d6e7a]">Así verán tu establecimiento los clientes en el directorio.</p>
@@ -236,7 +239,7 @@ export default function ProfileEditor({ api }: { api: EstablishmentManagementApi
       {message && <p className="rounded-2xl bg-[#c6f7f0] px-5 py-4 text-sm font-semibold text-[#0b6b5c]">{message}</p>}
       {error && <p className="rounded-2xl bg-[#fde8ea] px-5 py-4 text-sm font-semibold text-[#a30f35]">{error}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
+      <div className={`grid gap-6 ${adminMode ? "min-w-0" : "lg:grid-cols-[minmax(0,1fr)_21rem]"}`}>
         <div className="space-y-6">
           <section className={`${cardClass} space-y-5`}>
             <div className="flex items-center justify-between gap-3">
@@ -534,7 +537,7 @@ export default function ProfileEditor({ api }: { api: EstablishmentManagementApi
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e4e6f0] bg-white/95 p-4 backdrop-blur lg:hidden">
+      <div className={`fixed inset-x-0 z-30 border-t border-[#e4e6f0] bg-white/95 p-4 backdrop-blur lg:hidden ${adminMode ? "bottom-16 md:bottom-0" : "bottom-0"}`}>
         <button
           type="submit"
           form="profile-form"

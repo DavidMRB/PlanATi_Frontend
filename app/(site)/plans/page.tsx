@@ -16,8 +16,9 @@ export default function PlansPage() {
   return (
     <main className="min-h-screen bg-[#f8f9ff] pb-24 text-[#17243d] md:pb-10">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+        <header className="flex flex-wrap items-end justify-between gap-4 rounded-3xl bg-gradient-to-r from-[#eef0ff] to-[#f8f9ff] p-4 sm:p-6">
           <div className="space-y-2">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#514ddd]"><CalendarDays aria-hidden="true" className="size-4" /> Agenda de visitas</p>
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mis planes</h1>
             <p className="text-sm text-[#43506a]">Agenda tus visitas, elige qué pedir y recibe un recordatorio.</p>
           </div>
@@ -30,7 +31,7 @@ export default function PlansPage() {
           </Link>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className="grid items-start gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <PlansCalendar />
           <UpcomingPlans />
         </div>
@@ -65,7 +66,7 @@ function UpcomingPlans() {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-extrabold">Próximos</h2>
+      <h2 className="text-xl font-extrabold">Próximos planes</h2>
       {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
       {isLoading && plans.length === 0 ? (
         <div className="h-28 animate-pulse rounded-2xl bg-[#eef0ff]" aria-busy="true" />
@@ -83,7 +84,7 @@ function UpcomingPlans() {
       ) : (
         <div className="space-y-3">
           {plans.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
+            <PlanCard key={plan.id} plan={plan} featured />
           ))}
         </div>
       )}

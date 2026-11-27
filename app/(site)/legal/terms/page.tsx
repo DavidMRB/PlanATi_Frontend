@@ -128,6 +128,7 @@ export default function TermsPage() {
   return (
     <LegalDocumentPage
       title="Términos y condiciones"
+      related={{ href: "/legal/privacy", title: "Tu privacidad es fundamental", action: "Leer política de privacidad" }}
       version={TERMS_VERSION}
       effectiveDate={LEGAL_EFFECTIVE_DATE}
       intro={<p>Al crear una cuenta o usar PlanATi aceptas estas condiciones. Léelas con calma: son cortas.</p>}

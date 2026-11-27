@@ -69,7 +69,7 @@ function FavoritesView() {
   return (
     <main className="min-h-screen bg-[#f8f9ff] pb-24 text-[#17243d] md:pb-10">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+        <header className="flex flex-wrap items-end justify-between gap-4 rounded-3xl bg-gradient-to-br from-white to-[#edf8f7] p-4 sm:p-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mis favoritos</h1>
             <p className="text-sm text-[#43506a]">
@@ -78,7 +78,7 @@ function FavoritesView() {
             </p>
           </div>
           {items && items.length > 0 && (
-            <span className="rounded-full bg-[#eef0ff] px-3 py-1 text-xs font-medium text-[#26344d]">
+            <span className="rounded-full bg-[#c6f7f0] px-3 py-1 text-xs font-bold text-[#0b6b5c]">
               {remainingTotal} {remainingTotal === 1 ? "lugar guardado" : "lugares guardados"}
             </span>
           )}
@@ -87,8 +87,8 @@ function FavoritesView() {
         {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
         {!items && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
-            {Array.from({ length: 4 }, (_, key) => (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+            {Array.from({ length: 3 }, (_, key) => (
               <div key={key} className="h-72 animate-pulse rounded-2xl bg-[#eef2ff]" />
             ))}
           </div>
@@ -113,11 +113,12 @@ function FavoritesView() {
 
         {items && items.length > 0 && (
           <>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((establishment) => (
                 <EstablishmentCard
                   key={establishment.id}
                   establishment={establishment}
+                  showPlanActions
                   className={isFavorite(establishment.id, true) ? "" : "opacity-60"}
                 />
               ))}

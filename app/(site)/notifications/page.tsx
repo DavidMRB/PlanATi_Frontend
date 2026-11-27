@@ -41,14 +41,15 @@ function NotificationsInbox() {
 
   return (
     <main className="min-h-screen bg-[#f8f9ff] pb-24 text-[#17243d] md:pb-10">
-      <div className="mx-auto max-w-3xl space-y-6 px-5 py-8 sm:px-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+      <div className="mx-auto max-w-5xl space-y-4 px-4 py-6 sm:px-8 sm:py-8">
+        <header className="flex flex-wrap items-end justify-between gap-4 rounded-3xl bg-gradient-to-r from-[#eeefff] via-[#e5f3ff] to-[#c6f7f0] p-4 sm:p-7">
           <div className="space-y-2">
-            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Notificaciones</h1>
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold tracking-tight sm:text-4xl">
+              Notificaciones
+              {unreadCount > 0 && <span className="rounded-full bg-[#514ddd] px-2.5 py-1 text-xs font-bold tracking-normal text-white">{unreadCount} sin leer</span>}
+            </h1>
             <p className="text-sm text-[#43506a]">
-              {unreadCount > 0
-                ? `Tienes ${unreadCount} ${unreadCount === 1 ? "notificación sin leer" : "notificaciones sin leer"}.`
-                : "Estás al día."}
+              {unreadCount > 0 ? "Consulta tus recordatorios, respuestas y avisos de cuenta." : "Estás al día."}
             </p>
           </div>
           {unreadCount > 0 && (
@@ -63,7 +64,7 @@ function NotificationsInbox() {
           )}
         </header>
 
-        <div role="tablist" aria-label="Filtrar notificaciones" className="inline-flex rounded-xl bg-[#eef0ff] p-1">
+        <div role="tablist" aria-label="Filtrar notificaciones" className="flex gap-2 rounded-xl bg-white p-2 shadow-sm">
           {FILTERS.map(({ value, label }) => (
             <button
               key={value}
@@ -72,7 +73,7 @@ function NotificationsInbox() {
               aria-selected={filter === value}
               onClick={() => setFilter(value)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                filter === value ? "bg-white text-[#514ddd] shadow-sm" : "text-[#43506a] hover:text-[#514ddd]"
+                filter === value ? "bg-[#0b6b5c] text-white shadow-sm" : "bg-[#eef0ff] text-[#43506a] hover:text-[#514ddd]"
               }`}
             >
               {label}
@@ -194,14 +195,14 @@ function NotificationList({ unreadOnly }: { unreadOnly: boolean }) {
         {items.map((notification) => (
           <li
             key={notification.id}
-            className={`rounded-2xl p-4 shadow-[0_8px_24px_rgba(23,36,61,0.05)] ring-1 transition ${
-              notification.is_read ? "bg-white ring-[#eef0f6]" : "bg-[#f5f6ff] ring-[#d7dcf2]"
+            className={`rounded-2xl border-l-4 p-3 shadow-[0_8px_24px_rgba(23,36,61,0.05)] ring-1 transition sm:p-5 ${
+              notification.is_read ? "border-transparent bg-[#f0f4ff] ring-[#eef0f6]" : "border-[#514ddd] bg-white ring-[#d7dcf2]"
             }`}
           >
             <NotificationItem
               notification={notification}
               actions={
-                <div className="flex shrink-0 items-center gap-1">
+                <div className="flex shrink-0 flex-col items-center gap-1 sm:flex-row">
                   {!notification.is_read && (
                     <button
                       type="button"
@@ -229,9 +230,13 @@ function NotificationList({ unreadOnly }: { unreadOnly: boolean }) {
               <button
                 type="button"
                 onClick={() => open(notification)}
-                className="ml-12 mt-2 text-sm font-semibold text-[#514ddd] hover:underline"
+                className="ml-12 mt-2 rounded-lg bg-[#eef0ff] px-3 py-2 text-xs font-bold text-[#514ddd] hover:bg-[#e2e5ff]"
               >
-                Ver detalle
+                {notification.type === "PLAN_REMINDER" || notification.type === "PLAN_AFFECTED"
+                  ? "Ver plan"
+                  : notification.type === "REVIEW_REPLIED"
+                    ? "Ver respuesta"
+                    : "Ver detalle"}
               </button>
             )}
           </li>

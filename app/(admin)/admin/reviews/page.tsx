@@ -3,6 +3,7 @@
 import { MessageSquare, Search, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
+import AdminOverviewMetrics from "@/components/admin/AdminOverviewMetrics";
 import ModerationHelp from "@/components/admin/ModerationHelp";
 import ModerationReviewCard from "@/components/admin/ModerationReviewCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -93,13 +94,20 @@ function ReviewsModeration() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
+      <header className="space-y-2 rounded-2xl bg-gradient-to-br from-white to-[#eef0ff] p-4 sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#514ddd]">Cola de moderación</p>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Moderación de reseñas</h1>
         <p className="max-w-2xl text-base text-[#6d6e7a]">
           Ves siempre el texto original, aunque el comentario esté bloqueado. Las acciones quedan en la bitácora y avisan al
           autor.
         </p>
       </header>
+
+      <AdminOverviewMetrics metrics={[
+        { key: "flagged_for_review", label: "Pendientes de revisión", tone: "bg-[#eef0ff] text-[#4039b6]" },
+        { key: "hidden_reviews", label: "Reseñas ocultas", tone: "bg-[#fdeff2] text-[#a30f35]" },
+        { key: "reviews_last_7_days", label: "Reseñas en los últimos 7 días", tone: "bg-[#e3f7f3] text-[#0b6b5c]" },
+      ]} />
 
       <ModerationHelp />
 
@@ -134,7 +142,7 @@ function ReviewsModeration() {
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#81869a]"
             />
           </form>
-          <div className="flex gap-3">
+          <div className="grid min-w-0 grid-cols-2 gap-2 [&_select]:w-full">
             <label className="sr-only" htmlFor="admin-review-rating">
               Estrellas
             </label>
@@ -257,7 +265,7 @@ function ReviewPages({ filters, queue }: { filters: AdminReviewFilters; queue: Q
           description={queue === "flagged" ? "Cuando un autor reescriba un comentario bloqueado, aparecerá aquí." : undefined}
         />
       ) : (
-        <ul className="space-y-4">
+        <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
           {items.map((review) => (
             <ModerationReviewCard key={review.id} review={review} onChange={(updated, text) => onChange(review.id, updated, text)} />
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, TriangleAlert } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import Modal from "@/components/ui/Modal";
 import { REASON_MAX, REASON_MIN } from "@/lib/admin-api";
@@ -16,6 +16,7 @@ type ConfirmWithReasonModalProps = {
   tone?: "danger" | "primary";
   // Contenido extra bajo el motivo (p. ej. "Suspender también su establecimiento").
   extra?: ReactNode;
+  featured?: boolean;
   onClose: () => void;
   // Lanza un Error con el mensaje del backend si falla; el modal lo muestra y sigue abierto.
   onConfirm: (reason: string) => Promise<void>;
@@ -31,6 +32,7 @@ export default function ConfirmWithReasonModal({
   required = true,
   tone = "danger",
   extra,
+  featured = false,
   onClose,
   onConfirm,
 }: ConfirmWithReasonModalProps) {
@@ -54,7 +56,7 @@ export default function ConfirmWithReasonModal({
   };
 
   return (
-    <Modal title={title} onClose={busy ? () => undefined : onClose}>
+    <Modal title={title} onClose={busy ? () => undefined : onClose} blurBackdrop={featured} titleIcon={featured ? <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#fde0e3] text-[#a30f35]"><TriangleAlert aria-hidden="true" className="size-5" /></span> : undefined}>
       <div className="space-y-4">
         {description && <div className="text-sm leading-relaxed text-[#43506a]">{description}</div>}
         <div className="space-y-2">
@@ -91,7 +93,7 @@ export default function ConfirmWithReasonModal({
           type="button"
           onClick={onClose}
           disabled={busy}
-          className="rounded-xl px-4 py-2 text-sm font-semibold text-[#6d6e7a] hover:bg-[#f3f5fb]"
+          className="rounded-full bg-[#eef0ff] px-4 py-2 text-sm font-semibold text-[#43506a] hover:bg-[#e2e5ff]"
         >
           Cancelar
         </button>

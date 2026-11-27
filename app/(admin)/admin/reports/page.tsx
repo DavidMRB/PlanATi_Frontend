@@ -38,7 +38,8 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
+      <header className="space-y-2 rounded-2xl bg-gradient-to-br from-white to-[#eef0ff] p-4 sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#a30f35]">Moderación de contenido</p>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Reportes</h1>
         <p className="max-w-2xl text-base text-[#6d6e7a]">
           Contenido que la comunidad marcó como inapropiado. Resolver o descartar cierra todos los reportes abiertos del mismo
@@ -64,7 +65,7 @@ export default function AdminReportsPage() {
             </button>
           ))}
         </div>
-        <div className="flex gap-3">
+        <div className="grid min-w-0 grid-cols-2 gap-2 [&_select]:min-w-0 [&_select]:w-full">
           <label className="sr-only" htmlFor="report-target">
             Tipo de contenido
           </label>
@@ -165,10 +166,11 @@ function ReportPages({ status, targetType, reason }: { status: ReportStatusFilte
         </p>
       )}
       {error && <p className="rounded-2xl bg-[#fde8ea] px-5 py-4 text-sm font-semibold text-[#a30f35]">{error}</p>}
+      {total > 0 && <p className="text-sm font-bold text-[#514ddd]">{total} {total === 1 ? "reporte encontrado" : "reportes encontrados"}</p>}
       {items.length === 0 && !error ? (
         <EmptyState icon={Flag} title={status === "OPEN" ? "No hay reportes abiertos" : "No hay reportes con esos filtros"} description={status === "OPEN" ? "¡Todo al día!" : undefined} />
       ) : (
-        <ul className="space-y-4">
+        <ul className="grid gap-4 xl:grid-cols-2">
           {items.map((report) => (
             <ReportCard key={report.id} report={report} onChange={onChange} />
           ))}

@@ -81,7 +81,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
 
       {detail && (
         <>
-          <header className={`${card} flex flex-col gap-6 sm:p-8 lg:flex-row lg:items-start lg:justify-between`}>
+          <header className={`${card} flex flex-col gap-6 bg-gradient-to-br from-white to-[#f1f3ff] sm:p-8 lg:flex-row lg:items-start lg:justify-between`}>
             <div className="flex min-w-0 items-start gap-4">
               <Avatar user={detail} className="size-16 text-lg" />
               <div className="min-w-0 space-y-2">
@@ -92,7 +92,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   <span className={`rounded-full px-2.5 py-1 ${USER_STATUS_CLASS[detail.status] ?? ""}`}>{USER_STATUS_LABEL[detail.status] ?? detail.status}</span>
                   {isSelf && <span className="rounded-full bg-[#fff4d6] px-2.5 py-1 text-[#8a5a00]">Tu cuenta</span>}
                 </div>
-                <ul className="space-y-1 text-sm text-[#43506a]">
+                <ul className="space-y-1 rounded-xl bg-[#eef0ff] p-3 text-sm text-[#43506a]">
                   <li className="flex items-center gap-2">
                     <Mail aria-hidden="true" className="size-4 text-[#514ddd]" />
                     {detail.email}
@@ -144,7 +144,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   <button
                     type="button"
                     onClick={() => setDialog("suspend")}
-                    className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-200"
+                    className="flex items-center gap-2 rounded-xl bg-[#fde0e3] px-4 py-2.5 text-sm font-bold text-[#a30f35] hover:bg-rose-200"
                   >
                     <Ban aria-hidden="true" className="size-4" />
                     Suspender cuenta
@@ -283,9 +283,23 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
 
       {dialog === "suspend" && detail && (
         <ConfirmWithReasonModal
-          title={`Suspender a ${detail.full_name}`}
-          description="Su sesión deja de funcionar de inmediato y no podrá iniciar sesión. Recibirá el motivo."
-          confirmLabel="Suspender cuenta"
+          title="Confirmar suspensión de cuenta"
+          description={
+            <div className="space-y-3">
+              <p>Esta acción restringirá su acceso a PlanATi. La cuenta recibirá el motivo de la suspensión.</p>
+              <div className="flex items-center gap-3 rounded-xl bg-[#eef0ff] p-3">
+                <Avatar user={detail} className="size-9 shrink-0" />
+                <div className="min-w-0">
+                  <p className="break-words font-bold">{detail.full_name}{detail.nickname && ` (@${detail.nickname})`}</p>
+                  <p className="text-xs">{ROLE_LABEL[detail.role] ?? detail.role}{approvedPlace && ` · ${approvedPlace.name}`}</p>
+                </div>
+              </div>
+            </div>
+          }
+          confirmLabel="Confirmar suspensión"
+          reasonLabel="Motivo de la suspensión"
+          placeholder="Describe brevemente el motivo administrativo de la suspensión."
+          featured
           extra={
             isRestaurant && approvedPlace ? (
               <label className="flex items-start gap-2 rounded-xl bg-[#f3f5ff] px-4 py-3 text-sm">

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Clock, Eye, Image, Package, ShieldAlert, Store, Tags } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import CombosManager from "@/components/establishment-management/CombosManager";
@@ -13,11 +13,11 @@ import { ESTABLISHMENT_STATUS_CLASS, ESTABLISHMENT_STATUS_LABEL } from "@/lib/fo
 import { adminManagementApi } from "@/lib/management-api";
 
 const TABS = [
-  { value: "profile", label: "Perfil" },
-  { value: "products", label: "Productos" },
-  { value: "combos", label: "Combos" },
-  { value: "gallery", label: "Fotos" },
-  { value: "schedules", label: "Horarios" },
+  { value: "profile", label: "Perfil", icon: Store },
+  { value: "products", label: "Productos", icon: Package },
+  { value: "combos", label: "Combos", icon: Tags },
+  { value: "gallery", label: "Fotos", icon: Image },
+  { value: "schedules", label: "Horarios", icon: Clock },
 ] as const;
 
 type Tab = (typeof TABS)[number]["value"];
@@ -52,36 +52,28 @@ export default function AdminManageEstablishmentPage({ params }: { params: Promi
         Volver a la ficha
       </Link>
 
-      <div className="space-y-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5">
-        <p className="flex items-start gap-2 text-sm font-bold text-amber-900" role="note">
-          <ShieldAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
-          Estás editando como administrador. El establecimiento será notificado.
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <p className="text-lg font-extrabold text-[#17243d]">{place?.name ?? "Cargando…"}</p>
-          {place && (
-            <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${ESTABLISHMENT_STATUS_CLASS[place.status]}`}>
-              {ESTABLISHMENT_STATUS_LABEL[place.status] ?? place.status}
-            </span>
-          )}
+      <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#eef0ff] text-[#514ddd] sm:size-20">
+            {place?.profile_image_url || place?.banner_image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Imagen del establecimiento
+              <img src={place.profile_image_url ?? place.banner_image_url ?? ""} alt="" className="size-full object-cover" />
+            ) : <Store aria-hidden="true" className="size-6" />}
+          </div>
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <h1 className="break-words text-xl font-extrabold text-[#17243d] sm:text-3xl">{place?.name ?? "Cargando…"}</h1>
+              {place && (
+                <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${ESTABLISHMENT_STATUS_CLASS[place.status]}`}>
+                  {ESTABLISHMENT_STATUS_LABEL[place.status] ?? place.status}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-[#43506a]">Gestión administrativa del establecimiento</p>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="admin-edit-reason" className="text-sm font-semibold text-amber-900">
-            Motivo de la edición <span className="font-normal">(opcional; se guarda en la bitácora y se envía al dueño con los cambios del perfil)</span>
-          </label>
-          <input
-            id="admin-edit-reason"
-            value={reason}
-            maxLength={REASON_MAX}
-            onChange={(event) => {
-              setReason(event.target.value);
-              api.setReason(event.target.value);
-            }}
-            placeholder="Ej.: Corrección de la dirección reportada por usuarios."
-            className="h-11 w-full rounded-xl bg-white px-4 text-sm outline-none ring-2 ring-amber-200 focus:ring-amber-400"
-          />
-        </div>
-      </div>
+        {place?.status === "APPROVED" && <Link href={`/establishments/${establishmentId}`} className="flex items-center gap-2 rounded-xl bg-[#eef0ff] px-3 py-2 text-sm font-bold text-[#514ddd]"><Eye aria-hidden="true" className="size-4" /> Vista pública</Link>}
+      </header>
 
       <div role="tablist" aria-label="Secciones del establecimiento" className="flex gap-2 overflow-x-auto pb-1">
         {TABS.map((item) => (
@@ -93,21 +85,45 @@ export default function AdminManageEstablishmentPage({ params }: { params: Promi
             aria-selected={tab === item.value}
             aria-controls="manage-panel"
             onClick={() => setTab(item.value)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-              tab === item.value ? "bg-[#514ddd] text-white" : "bg-white text-[#26344d] shadow-[0_2px_8px_rgba(23,36,61,0.06)] hover:bg-[#eef0ff]"
-            }`}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+              tab === item.value ? "bg-[#514ddd] text-white" : "bg-[#eef0ff] text-[#26344d] hover:bg-[#e2e5ff]"
+              }`}
           >
+            <item.icon aria-hidden="true" className="size-4" />
             {item.label}
           </button>
         ))}
       </div>
 
-      <div id="manage-panel" role="tabpanel" aria-labelledby={`manage-tab-${tab}`}>
-        {tab === "profile" && <ProfileEditor api={api} />}
-        {tab === "products" && <ProductsManager api={api} />}
-        {tab === "combos" && <CombosManager api={api} />}
-        {tab === "gallery" && <GalleryManager api={api} />}
-        {tab === "schedules" && <SchedulesEditor load={api.getSchedules} save={api.putSchedules} />}
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <aside className="space-y-4 rounded-2xl bg-[#eef0ff] p-4 xl:order-last xl:sticky xl:top-24">
+          <h2 className="flex items-center gap-2 text-lg font-extrabold"><ShieldAlert aria-hidden="true" className="size-5 text-[#514ddd]" /> Auditoría</h2>
+          <p className="text-sm text-[#43506a]" role="note">Estás editando como administrador. El establecimiento será notificado.</p>
+          <div className="space-y-1.5">
+            <label htmlFor="admin-edit-reason" className="text-sm font-semibold text-[#26344d]">
+              Motivo de la edición <span className="font-normal">(opcional; se guarda en la bitácora y se envía al dueño con los cambios del perfil)</span>
+            </label>
+            <textarea
+              id="admin-edit-reason"
+              rows={4}
+              value={reason}
+              maxLength={REASON_MAX}
+              onChange={(event) => {
+                setReason(event.target.value);
+                api.setReason(event.target.value);
+              }}
+              placeholder="Ej.: Corrección de la dirección reportada por usuarios."
+              className="w-full rounded-xl bg-white px-3 py-2.5 text-sm outline-none ring-1 ring-[#d7dcf2] focus:ring-2 focus:ring-[#514ddd]"
+            />
+          </div>
+        </aside>
+        <div id="manage-panel" role="tabpanel" className="min-w-0" aria-labelledby={`manage-tab-${tab}`}>
+          {tab === "profile" && <ProfileEditor api={api} />}
+          {tab === "products" && <ProductsManager api={api} />}
+          {tab === "combos" && <CombosManager api={api} />}
+          {tab === "gallery" && <GalleryManager api={api} />}
+          {tab === "schedules" && <SchedulesEditor load={api.getSchedules} save={api.putSchedules} />}
+        </div>
       </div>
     </div>
   );

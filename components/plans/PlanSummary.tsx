@@ -6,6 +6,7 @@ export type SummaryLine = { id: number; name: string; quantity: number; unitPric
 
 type PlanSummaryProps = {
   establishmentName: string;
+  coverImage?: string | null;
   when: string | null;
   partySize: number;
   lines: SummaryLine[];
@@ -18,14 +19,18 @@ export function summaryTotal(lines: SummaryLine[]): number {
 }
 
 // Resumen del asistente: en escritorio una columna fija; en móvil, una barra inferior con el total.
-export default function PlanSummary({ establishmentName, when, partySize, lines, action }: PlanSummaryProps) {
+export default function PlanSummary({ establishmentName, coverImage, when, partySize, lines, action }: PlanSummaryProps) {
   const total = summaryTotal(lines);
   const units = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   return (
     <>
-      <aside className="hidden space-y-4 rounded-3xl bg-white p-6 shadow-[0_8px_24px_rgba(23,36,61,0.06)] lg:sticky lg:top-24 lg:block">
-        <h2 className="text-lg font-extrabold text-[#17243d]">Resumen</h2>
+      <aside className="hidden space-y-4 overflow-hidden rounded-2xl bg-white p-5 shadow-[0_8px_24px_rgba(23,36,61,0.06)] lg:sticky lg:top-24 lg:block">
+        {coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element -- Imagen del establecimiento
+          <img src={coverImage} alt="" className="h-36 w-full rounded-xl object-cover" />
+        )}
+        <h2 className="text-lg font-extrabold text-[#17243d]">Resumen de la visita</h2>
         <ul className="space-y-2 text-sm text-[#43506a]">
           <li className="flex items-start gap-2">
             <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-[#514ddd]" />
@@ -52,7 +57,7 @@ export default function PlanSummary({ establishmentName, when, partySize, lines,
             ))}
           </ul>
         )}
-        <div className="flex items-baseline justify-between border-t border-[#eceef7] pt-3">
+        <div className="flex items-baseline justify-between rounded-xl bg-[#eef0ff] p-3">
           <span className="text-sm font-semibold text-[#43506a]">Total estimado</span>
           <span className="text-xl font-extrabold text-[#514ddd]">{formatCop(total)}</span>
         </div>

@@ -2,7 +2,6 @@
 
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import EmptyState from "@/components/ui/EmptyState";
 import { addDaysToKey, bogotaParts, formatDate, monthGrid, toBogotaIso, toDateKey } from "@/lib/datetime";
 import { listPlans, planErrorMessage, type PlanListItem } from "@/lib/plans-api";
 import PlanCard from "./PlanCard";
@@ -68,8 +67,8 @@ export default function PlansCalendar() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="rounded-2xl bg-white p-3.5 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-5">
+        <div className="mb-2 flex items-center justify-between">
           <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior" className="flex size-9 items-center justify-center rounded-lg text-[#514ddd] hover:bg-[#f3f5ff]">
             <ChevronLeft aria-hidden="true" className="size-5" />
           </button>
@@ -103,7 +102,7 @@ export default function PlansCalendar() {
                 aria-selected={isSelected}
                 aria-label={`${formatDate(`${key}T12:00:00-05:00`)}${plans.length ? `, ${plans.length} ${plans.length === 1 ? "plan" : "planes"}` : ""}`}
                 onClick={() => setSelected(key)}
-                className={`flex aspect-square flex-col items-center justify-center gap-1 rounded-xl text-sm transition sm:aspect-auto sm:h-14 ${
+                className={`flex h-9 flex-col items-center justify-center gap-0.5 rounded-lg text-sm transition sm:h-10 ${
                   isSelected
                     ? "bg-[#514ddd] font-bold text-white"
                     : isToday
@@ -126,12 +125,13 @@ export default function PlansCalendar() {
         {result?.error && !loading && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{result.error}</p>}
       </div>
 
-      <section className="space-y-3">
-        <h3 className="text-base font-bold first-letter:uppercase text-[#17243d]">
-          {formatDate(`${selected}T12:00:00-05:00`, { weekday: "long" })}
-        </h3>
+      <section className="space-y-3 rounded-2xl bg-white p-3.5 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 text-base font-bold text-[#17243d]"><CalendarDays aria-hidden="true" className="size-4 text-[#514ddd]" /> Planes para el día</h3>
+          <p className="rounded-full bg-[#eef0ff] px-2.5 py-1 text-xs font-bold capitalize text-[#514ddd]">{formatDate(`${selected}T12:00:00-05:00`, { weekday: "long" })}</p>
+        </div>
         {loading ? null : agenda.length === 0 ? (
-          <EmptyState icon={CalendarDays} title="Sin planes este día" className="py-6" />
+          <p className="rounded-xl bg-[#f3f5ff] px-3 py-2.5 text-sm text-[#43506a]">Sin planes este día.</p>
         ) : (
           <div className="space-y-3">
             {agenda.map((plan) => (
