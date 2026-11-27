@@ -7,6 +7,7 @@ import ReplyEditor from "@/components/reviews/ReplyEditor";
 import { ReportButton } from "@/components/reviews/ReportDialog";
 import ReviewCard from "@/components/reviews/ReviewCard";
 import EmptyState from "@/components/ui/EmptyState";
+import ExcelExportButton from "@/components/ui/ExcelExportButton";
 import LoadMoreButton from "@/components/ui/LoadMoreButton";
 import {
   getRestaurantProfile,
@@ -75,17 +76,18 @@ export default function RestaurantReviewsPage() {
         <div className="relative space-y-3">
           <p className="text-xs font-bold uppercase tracking-widest text-[#514ddd]">Gestión de calidad</p>
           <h1 className="text-3xl font-extrabold sm:text-4xl">Reseñas y respuestas</h1>
-          <p className="max-w-2xl text-base text-[#43506a]">
+          <p className="hidden max-w-2xl text-base text-[#43506a] sm:block">
             Responder a tiempo muestra que te importa la experiencia de quien te visita. Tus respuestas son públicas y
             aparecen debajo de cada reseña.
           </p>
         </div>
+        <ExcelExportButton filename="resenas-planati.xlsx" path="/restaurant/exports/reviews.xlsx" label="Exportar reseñas en Excel" />
       </header>
 
       {summaryError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{summaryError}</p>}
 
       {summary ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_13rem]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,0.33fr)]">
           <RatingSummary
             average={summary.rating_avg}
             count={summary.rating_count}
@@ -105,7 +107,7 @@ export default function RestaurantReviewsPage() {
               <span className="flex size-9 items-center justify-center rounded-xl bg-[#fde0e3] text-[#d6154a]">
                 <MessageSquareReply aria-hidden="true" className="size-5" />
               </span>
-              <p className="mt-3 text-3xl font-extrabold">{summary.unanswered_count}</p>
+              <p className="mt-1 text-2xl font-extrabold sm:mt-3 sm:text-3xl">{summary.unanswered_count}</p>
               <p className="text-sm font-bold">Sin responder</p>
             </button>
             <div className="rounded-2xl bg-gradient-to-br from-[#514ddd] to-[#4034ae] p-4 text-white shadow-sm">

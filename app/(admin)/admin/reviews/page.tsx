@@ -94,7 +94,7 @@ function ReviewsModeration() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2 rounded-2xl bg-gradient-to-br from-white to-[#eef0ff] p-4 sm:p-6">
+      <header className="space-y-2 pb-2 lg:rounded-2xl lg:bg-gradient-to-br lg:from-white lg:to-[#eef0ff] lg:p-6">
         <p className="text-xs font-bold uppercase tracking-widest text-[#514ddd]">Cola de moderación</p>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Moderación de reseñas</h1>
         <p className="max-w-2xl text-base text-[#6d6e7a]">
@@ -108,8 +108,6 @@ function ReviewsModeration() {
         { key: "hidden_reviews", label: "Reseñas ocultas", tone: "bg-[#fdeff2] text-[#a30f35]" },
         { key: "reviews_last_7_days", label: "Reseñas en los últimos 7 días", tone: "bg-[#e3f7f3] text-[#0b6b5c]" },
       ]} />
-
-      <ModerationHelp />
 
       <div className="space-y-4 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-5">
         <div role="group" aria-label="Cola" className="flex gap-2 overflow-x-auto pb-1">
@@ -191,6 +189,7 @@ function ReviewsModeration() {
         )}
       </div>
 
+      <ModerationHelp />
       <ReviewPages key={JSON.stringify(filters)} filters={filters} queue={queue} />
     </div>
   );

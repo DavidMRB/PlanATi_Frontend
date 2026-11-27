@@ -11,7 +11,7 @@ type LegalDocumentPageProps = {
   effectiveDate: string;
   intro: ReactNode;
   sections: LegalSection[];
-  related: { href: string; title: string; action: string };
+  related: { href: string; title: string; action: string; description?: string };
   mobileAccordion?: boolean;
 };
 
@@ -22,8 +22,8 @@ const sectionStyle = "rounded-2xl bg-white p-4 shadow-[0_4px_16px_rgba(23,36,61,
 export default function LegalDocumentPage({ title, mobileTitle, version, effectiveDate, intro, sections, related, mobileAccordion = false }: LegalDocumentPageProps) {
   return (
     <main className="bg-[#f6f7fc] px-4 pb-24 pt-5 text-[#17243d] sm:px-7 sm:py-9">
-      <div className="mx-auto max-w-[74rem] space-y-5">
-        <header className="space-y-4 rounded-3xl bg-gradient-to-br from-[#eef0ff] via-white to-[#e6faf6] p-5 sm:p-8 lg:p-10">
+      <div className="mx-auto max-w-[74rem] space-y-5 md:max-lg:max-w-3xl">
+        <header className="space-y-4 border-b border-[#e4e6f0] pb-5 sm:rounded-2xl sm:border-0 sm:bg-gradient-to-br sm:from-[#eef0ff] sm:via-white sm:to-[#e6faf6] sm:p-8 lg:p-10">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#514ddd]">
             <ShieldCheck aria-hidden="true" className="size-4" /> Términos legales
           </p>
@@ -40,7 +40,7 @@ export default function LegalDocumentPage({ title, mobileTitle, version, effecti
         </header>
 
         <div className="grid items-start gap-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
-          <nav aria-label="Contenido" className="hidden rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)] sm:block lg:sticky lg:top-24">
+          <nav aria-label="Contenido" className="hidden rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(23,36,61,0.06)] md:block lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-wider text-[#6d6e7a]">Contenido</p>
             <ol className="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-1">
               {sections.map((section, index) => (
@@ -68,8 +68,8 @@ export default function LegalDocumentPage({ title, mobileTitle, version, effecti
                     <div className={contentStyle}>{section.content}</div>
                   </div>
                   {mobileAccordion && (
-                // El navegador puede abrir el acordeón antes de que React hidrate la página.
-                <details suppressHydrationWarning className={`group ${sectionStyle} sm:hidden`}>
+                    // El navegador puede abrir el acordeón antes de que React hidrate la página.
+                    <details suppressHydrationWarning className={`group ${sectionStyle} sm:hidden`}>
                       <summary className={`${headingStyle} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
                         {heading}<ChevronDown aria-hidden="true" className="ml-auto size-4 shrink-0 text-[#514ddd] group-open:rotate-180" />
                       </summary>
@@ -80,7 +80,10 @@ export default function LegalDocumentPage({ title, mobileTitle, version, effecti
               );
             })}
             <aside className="rounded-2xl bg-gradient-to-br from-[#514ddd] to-[#3730a3] p-5 text-white sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-7">
-              <h2 className="flex items-center gap-2 text-lg font-extrabold"><ShieldCheck aria-hidden="true" className="size-5" />{related.title}</h2>
+              <div className="space-y-2">
+                <h2 className="flex items-center gap-2 text-lg font-extrabold"><ShieldCheck aria-hidden="true" className="size-5 shrink-0" />{related.title}</h2>
+                {related.description && <p className="max-w-md text-sm text-white/90">{related.description}</p>}
+              </div>
               <Link href={related.href} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#3934b3] hover:bg-[#eef0ff] sm:mt-0">
                 {related.action}<ArrowRight aria-hidden="true" className="size-4" />
               </Link>

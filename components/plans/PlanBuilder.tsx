@@ -57,9 +57,9 @@ export default function PlanBuilder(props: PlanBuilderProps) {
       <div className="min-w-0 space-y-6">
         <div className="flex items-center gap-4 rounded-3xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
           <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#eef0ff] text-[#514ddd]">
-            {detail.profile_image_url ? (
+            {(detail.banner_image_url || detail.profile_image_url) ? (
               // eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2
-              <img src={detail.profile_image_url} alt="" className="size-full object-cover" />
+              <img src={detail.banner_image_url ?? detail.profile_image_url ?? undefined} alt="" className="size-full object-cover" />
             ) : (
               <MapPin aria-hidden="true" className="size-6" />
             )}

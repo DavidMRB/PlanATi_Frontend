@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Heart } from "lucide-react";
+import { Compass, Heart, Search } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import RequireRole from "@/components/common/RequireRole";
@@ -9,7 +9,7 @@ import { useFavorites } from "@/components/favorites/FavoritesProvider";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadMoreButton from "@/components/ui/LoadMoreButton";
 import { listFavorites } from "@/lib/favorites-api";
-import type { PublicEstablishment } from "@/lib/establishments-api";
+import { establishmentTypeLabel, type PublicEstablishment } from "@/lib/establishments-api";
 
 const PAGE_SIZE = 20;
 
@@ -24,6 +24,8 @@ export default function FavoritesPage() {
 
 function FavoritesView() {
   const { isFavorite } = useFavorites();
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState("");
   const [items, setItems] = useState<PublicEstablishment[] | null>(null);
   const [total, setTotal] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -54,6 +56,12 @@ function FavoritesView() {
   const kept = items?.filter((item) => isFavorite(item.id, true)) ?? [];
   const removedCount = (items?.length ?? 0) - kept.length;
   const remainingTotal = Math.max(total - removedCount, kept.length);
+  const types = [...new Set(items?.map(item => item.establishment_type))];
+  const term = query.trim().toLocaleLowerCase("es-CO");
+  const visible = (items ?? []).filter(item =>
+    (!type || item.establishment_type === type) &&
+    [item.name, item.category, item.address].some(value => value.toLocaleLowerCase("es-CO").includes(term))
+  );
 
   const loadMore = async () => {
     setIsLoadingMore(true);
@@ -69,7 +77,7 @@ function FavoritesView() {
   return (
     <main className="min-h-screen bg-[#f8f9ff] pb-24 text-[#17243d] md:pb-10">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex flex-wrap items-end justify-between gap-4 rounded-3xl bg-gradient-to-br from-white to-[#edf8f7] p-4 sm:p-6">
+        <header className="flex flex-wrap items-end justify-between gap-4 border-b border-[#e5eafb] pb-4 lg:rounded-2xl lg:bg-gradient-to-r lg:from-[#eef0ff] lg:to-[#edf8f7] lg:p-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mis favoritos</h1>
             <p className="text-sm text-[#43506a]">
@@ -83,6 +91,24 @@ function FavoritesView() {
             </span>
           )}
         </header>
+
+        {items && items.length > 0 && (
+          <div className="space-y-3">
+            <label className="flex min-h-11 items-center gap-3 rounded-xl bg-white px-4 shadow-sm focus-within:ring-2 focus-within:ring-[#514ddd]">
+              <Search aria-hidden="true" className="size-4 shrink-0 text-[#514ddd]" />
+              <span className="sr-only">Buscar entre los favoritos cargados</span>
+              <input type="search" placeholder="Buscar en tus guardados" value={query} onChange={event => setQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+            </label>
+            <div role="group" aria-label="Tipo de establecimiento" className="flex flex-wrap gap-2">
+              {["", ...types].map(value => (
+                <button type="button" key={value} aria-pressed={type === value} onClick={() => setType(value)} className={"rounded-full bg-[#e8edff] px-3 py-2 text-xs font-bold text-[#43506a] aria-pressed:bg-[#006c60] aria-pressed:text-white"}>
+                  {value ? establishmentTypeLabel(value) ?? value : "Todos"}
+                </button>
+              ))}
+            </div>
+            {(term || type) && <p role="status" className="text-xs text-[#43506a]">{visible.length} coincidencias entre los lugares cargados.</p>}
+          </div>
+        )}
 
         {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
@@ -114,7 +140,7 @@ function FavoritesView() {
         {items && items.length > 0 && (
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((establishment) => (
+              {visible.map((establishment) => (
                 <EstablishmentCard
                   key={establishment.id}
                   establishment={establishment}

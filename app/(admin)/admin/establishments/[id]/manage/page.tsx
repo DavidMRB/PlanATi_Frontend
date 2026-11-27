@@ -8,8 +8,9 @@ import GalleryManager from "@/components/establishment-management/GalleryManager
 import ProductsManager from "@/components/establishment-management/ProductsManager";
 import ProfileEditor from "@/components/establishment-management/ProfileEditor";
 import SchedulesEditor from "@/components/establishment-management/SchedulesEditor";
-import { getAdminEstablishment, REASON_MAX, type AdminEstablishmentDetail } from "@/lib/admin-api";
+import { getAdminEstablishment, listModerationActions, MODERATION_ACTION_LABEL, type ModerationActionItem, REASON_MAX, type AdminEstablishmentDetail } from "@/lib/admin-api";
 import { ESTABLISHMENT_STATUS_CLASS, ESTABLISHMENT_STATUS_LABEL } from "@/lib/format";
+import { formatDateTime } from "@/lib/datetime";
 import { adminManagementApi } from "@/lib/management-api";
 
 const TABS = [
@@ -95,8 +96,12 @@ export default function AdminManageEstablishmentPage({ params }: { params: Promi
         ))}
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
-        <aside className="space-y-4 rounded-2xl bg-[#eef0ff] p-4 xl:order-last xl:sticky xl:top-24">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(12rem,0.42fr)]">
+        <aside className="space-y-4 rounded-2xl bg-[#eef0ff] p-4 lg:order-last">
+          {place?.banner_image_url && (
+            // eslint-disable-next-line @next/next/no-img-element -- Portada del establecimiento.
+            <img src={place.banner_image_url} alt="" className="hidden aspect-[16/9] w-full rounded-xl object-cover md:block" />
+          )}
           <h2 className="flex items-center gap-2 text-lg font-extrabold"><ShieldAlert aria-hidden="true" className="size-5 text-[#514ddd]" /> Auditoría</h2>
           <p className="text-sm text-[#43506a]" role="note">Estás editando como administrador. El establecimiento será notificado.</p>
           <div className="space-y-1.5">
@@ -116,6 +121,7 @@ export default function AdminManageEstablishmentPage({ params }: { params: Promi
               className="w-full rounded-xl bg-white px-3 py-2.5 text-sm outline-none ring-1 ring-[#d7dcf2] focus:ring-2 focus:ring-[#514ddd]"
             />
           </div>
+          <RecentActions key={establishmentId} establishmentId={establishmentId} />
         </aside>
         <div id="manage-panel" role="tabpanel" className="min-w-0" aria-labelledby={`manage-tab-${tab}`}>
           {tab === "profile" && <ProfileEditor api={api} />}
@@ -126,5 +132,29 @@ export default function AdminManageEstablishmentPage({ params }: { params: Promi
         </div>
       </div>
     </div>
+  );
+}
+
+function RecentActions({ establishmentId }: { establishmentId: number }) {
+  const [items, setItems] = useState<ModerationActionItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    listModerationActions({ target_type: "ESTABLISHMENT", target_id: establishmentId, limit: 3 })
+      .then(page => { if (active) setItems(page?.items ?? []); })
+      .catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
+  }, [establishmentId]);
+  return (
+    <section className="rounded-xl bg-white p-4">
+      <h3 className="mb-3 font-bold">Últimos registros</h3>
+      {items?.length ? <ul className="divide-y divide-[#eef0ff]">
+        {items.map(item => <li key={item.id} className="space-y-1 py-2 text-sm">
+          <p className="font-semibold">{MODERATION_ACTION_LABEL[item.action] ?? item.action}</p>
+          {item.reason && <p>{item.reason}</p>}
+          <p className="text-xs text-[#43506a]">{item.admin_name ?? "Sistema"} · <time dateTime={item.created_at}>{formatDateTime(item.created_at)}</time></p>
+        </li>)}
+      </ul> : <p className="text-sm text-[#43506a]">{failed ? "No se pudo consultar la bitácora." : items ? "Aún no hay cambios registrados." : "Consultando la bitácora…"}</p>}
+    </section>
   );
 }

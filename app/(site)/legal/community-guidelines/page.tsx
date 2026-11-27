@@ -40,7 +40,11 @@ export default function CommunityGuidelinesPage() {
           </p>
         </header>
 
-        <div className="grid items-start gap-5 md:grid-cols-2">
+        <nav aria-label="En esta página" className="flex flex-wrap gap-2">
+          <a className="rounded-full bg-[#e1f7f2] px-3 py-2 text-xs font-bold text-[#006c60]" href="#participar">Qué puedes publicar</a>
+          <a className="rounded-full bg-[#eef0ff] px-3 py-2 text-xs font-bold text-[#514ddd]" href="#reportar">Cómo reportar</a>
+        </nav>
+        <div id="participar" className="grid items-start gap-5 md:grid-cols-2">
           <section className="space-y-4 rounded-2xl border-t-4 border-[#21bba5] bg-white p-5 sm:p-6">
             <h2 className="flex items-center gap-2 text-xl font-bold"><Check aria-hidden="true" className="size-5 text-[#0b6b5c]" /> Qué sí puedes publicar</h2>
             <ul className="space-y-2 text-sm leading-relaxed text-[#43506a] [&_li]:rounded-xl [&_li]:bg-[#edf9f6] [&_li]:p-3">
@@ -64,6 +68,14 @@ export default function CommunityGuidelinesPage() {
           </section>
         </div>
 
+        <section id="reportar" className="space-y-4 rounded-2xl bg-white p-5 sm:p-7">
+          <h2 className="text-xl font-bold">Cómo reportar en tres pasos</h2>
+          <ol className="grid gap-3 text-sm text-[#43506a] sm:grid-cols-3">
+            <li className="rounded-xl bg-[#eef0ff] p-4"><strong className="block text-[#514ddd]">1. Abre el contenido</strong> Busca la reseña, foto o ficha del establecimiento.</li>
+            <li className="rounded-xl bg-[#eef0ff] p-4"><strong className="block text-[#514ddd]">2. Elige «Reportar»</strong> Selecciona el motivo y agrega detalles si los tienes.</li>
+            <li className="rounded-xl bg-[#e3f7f3] p-4"><strong className="block text-[#006c60]">3. Envía el reporte</strong> Recibirás un aviso cuando termine la revisión.</li>
+          </ol>
+        </section>
         <section className="space-y-4 rounded-2xl bg-white p-5 sm:p-7">
           <h2 className="flex items-center gap-2 text-xl font-bold"><Flag aria-hidden="true" className="size-5 text-[#514ddd]" /> Cómo moderamos</h2>
           <p className="text-[#43506a]">

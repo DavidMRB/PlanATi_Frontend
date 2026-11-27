@@ -30,7 +30,7 @@ export default function BottomTabBar({ items, label }: { items: TabItem[]; label
               ? match(pathname)
               : pathname === href || pathname.startsWith(`${href}/`)
             : false;
-          const className = `flex flex-col items-center gap-1 px-3 py-2 text-[11px] font-semibold transition ${
+          const className = `flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-[11px] font-semibold transition ${
             isActive ? "text-[#514ddd]" : "text-[#6d6e7a] hover:text-[#514ddd]"
           }`;
           const content = (
@@ -43,7 +43,7 @@ export default function BottomTabBar({ items, label }: { items: TabItem[]; label
           );
 
           return (
-            <li key={itemLabel} className="flex-1">
+            <li key={itemLabel} className="min-w-0 flex-1">
               {href ? (
                 <Link href={href} aria-current={isActive ? "page" : undefined} className={className}>
                   {content}

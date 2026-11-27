@@ -122,6 +122,11 @@ export default function PlansCalendar() {
             );
           })}
         </div>
+        <ul aria-label="Estados del calendario" className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-2 border-t border-[#e6eaff] pt-3 text-[11px] font-semibold text-[#43506a]">
+          <li className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#514ddd]" /> Programado</li>
+          <li className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#0b6b5c]" /> Completado</li>
+          <li className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#b7bccb]" /> Cancelado</li>
+        </ul>
         {result?.error && !loading && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{result.error}</p>}
       </div>
 

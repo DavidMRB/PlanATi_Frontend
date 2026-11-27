@@ -2,6 +2,7 @@
 
 import { Flag } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import AdminOverviewMetrics from "@/components/admin/AdminOverviewMetrics";
 import ModerationHelp from "@/components/admin/ModerationHelp";
 import ReportCard from "@/components/admin/ReportCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -38,7 +39,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2 rounded-2xl bg-gradient-to-br from-white to-[#eef0ff] p-4 sm:p-6">
+      <header className="space-y-2 pb-3 lg:rounded-2xl lg:bg-gradient-to-br lg:from-white lg:to-[#eef0ff] lg:p-6">
         <p className="text-xs font-bold uppercase tracking-widest text-[#a30f35]">Moderación de contenido</p>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Reportes</h1>
         <p className="max-w-2xl text-base text-[#6d6e7a]">
@@ -47,7 +48,9 @@ export default function AdminReportsPage() {
         </p>
       </header>
 
-      <ModerationHelp />
+      <AdminOverviewMetrics metrics={[
+        { key: "open_reports", label: "Reportes abiertos", tone: "bg-[#fdeff2] text-[#a30f35]" },
+      ]} />
 
       <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-5 lg:flex-row lg:items-center lg:justify-between">
         <div role="group" aria-label="Estado" className="flex gap-2 overflow-x-auto pb-1">
@@ -91,6 +94,7 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
+      <ModerationHelp />
       <ReportPages key={`${status}-${targetType}-${reason}`} status={status} targetType={targetType} reason={reason} />
     </div>
   );
@@ -170,7 +174,7 @@ function ReportPages({ status, targetType, reason }: { status: ReportStatusFilte
       {items.length === 0 && !error ? (
         <EmptyState icon={Flag} title={status === "OPEN" ? "No hay reportes abiertos" : "No hay reportes con esos filtros"} description={status === "OPEN" ? "¡Todo al día!" : undefined} />
       ) : (
-        <ul className="grid gap-4 xl:grid-cols-2">
+        <ul className="grid gap-4 lg:grid-cols-2">
           {items.map((report) => (
             <ReportCard key={report.id} report={report} onChange={onChange} />
           ))}

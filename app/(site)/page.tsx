@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowRight, BedDouble, Coffee, FerrisWheel, Flame, Loader2, LocateFixed, MapPin, Martini, Music, Search, ShoppingBag, Star, Utensils } from "lucide-react";
+import { ArrowRight, BedDouble, Coffee, FerrisWheel, Loader2, LocateFixed, MapPin, Martini, ShoppingBag, Star, Utensils } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import EstablishmentSearch from "@/components/establishments/EstablishmentSearch";
 import EstablishmentCard from "@/components/establishments/EstablishmentCard";
 import AccountDeletedNotice from "@/components/privacy/AccountDeletedNotice";
 import LocationPurposeNote from "@/components/privacy/LocationPurposeNote";
@@ -26,35 +27,6 @@ const CATEGORIES: HomeCategory[] = [
   { label: "Hoteles", icon: BedDouble, href: "/explore?type=HOTEL", tone: "bg-[#e5e3fb] text-[#514ddd]" },
   { label: "Experiencias", icon: FerrisWheel, href: "/explore?type=EXPERIENCE", tone: "bg-[#fde0e3] text-[#d6154a]" },
   { label: "Tiendas", icon: ShoppingBag, href: "/explore?type=STORE", tone: "bg-[#c6f7f0] text-[#0b5c52]" },
-];
-
-const TRENDING = [
-  { label: "Tendencia: El Malecón", icon: Flame },
-  { label: "Mejores Cafés", icon: Coffee },
-  { label: "Música en Vivo", icon: Music },
-];
-
-const FALLBACK_EXPERIENCES = [
-  {
-    tag: "Parejas",
-    price: null,
-    imageUrl: null,
-    place: null,
-    tagTone: "bg-[#d6154a] text-white",
-    title: "Plan Enamorados",
-    description: "Una velada mágica bajo las estrellas con cena gourmet de tres tiempos y música suave.",
-    background: "bg-[linear-gradient(135deg,#9fa8c4,#5d6d8f)]",
-  },
-  {
-    tag: "Creativo",
-    price: null,
-    imageUrl: null,
-    place: null,
-    tagTone: "bg-[#0b6b5c] text-white",
-    title: "Brunch & Cerámica",
-    description: "Despierta tu creatividad con un taller de pintura en cerámica mientras disfrutas de un brunch artesanal.",
-    background: "bg-[linear-gradient(135deg,#f3e3cf,#d9b99a)]",
-  },
 ];
 
 type Experience = {
@@ -174,53 +146,32 @@ export default function HomePage() {
   const recommended = nearby ?? general;
   const showLocationPrompt = !nearby && geo.status !== "granted";
 
-  const displayedExperiences: Experience[] =
-    experiences && experiences.length > 0
-      ? experiences
-      : FALLBACK_EXPERIENCES.map((item) => ({ ...item, key: item.title, href: null }));
+  const cover = general?.find(({ establishment }) => establishment.banner_image_url)?.establishment.banner_image_url;
 
   return (
     <>
       <main className="bg-[#f8f9ff] text-[#17243d]">
         <AccountDeletedNotice />
-        <section className="relative flex min-h-[28rem] items-center justify-center bg-[linear-gradient(135deg,#3f3bb5,#6d69ea_55%,#5df0dc)] px-5 py-16 sm:min-h-[32rem]">
-          <div className="absolute inset-0 bg-[#17243d]/25" />
-          <div className="relative flex w-full max-w-3xl flex-col items-center gap-5 text-center text-white">
-            <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl">Descubre Cúcuta, A Tu Ritmo</h1>
-            <p className="max-w-xl text-base text-white/90 sm:text-lg">
+        <section className="relative flex items-center justify-center bg-[#eef1ff] px-5 py-8 md:py-12 lg:min-h-[25rem] lg:bg-[#383887] lg:py-16">
+          {cover && (
+            // eslint-disable-next-line @next/next/no-img-element -- Portada publicada por el establecimiento
+            <img src={cover} alt="" className="absolute inset-0 hidden size-full object-cover lg:block" />
+          )}
+          <div className="absolute inset-0 hidden bg-[#17243d]/55 lg:block" />
+          <div className="relative flex w-full max-w-6xl flex-col items-start gap-4 text-[#17243d] lg:items-center lg:text-center lg:text-white">
+            <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">Descubre Cúcuta, A Tu Ritmo</h1>
+            <p className="max-w-xl text-sm text-[#43506a] sm:text-base lg:text-white/90">
               Encuentra los mejores lugares, eventos y experiencias que la ciudad tiene para ofrecerte hoy.
             </p>
-            <form action="/explore" className="flex w-full items-center gap-2 rounded-full bg-white p-2 pl-5 shadow-[0_12px_30px_rgba(23,36,61,0.25)]">
-              <Search aria-hidden="true" className="size-5 shrink-0 text-[#514ddd]" />
-              <input
-                name="search"
-                placeholder="¿Qué se te antoja hoy? (ej. Pizza, Música en vivo, Cafés...)"
-                className="min-w-0 flex-1 bg-transparent text-sm text-[#17243d] outline-none placeholder:text-[#81869a]"
-              />
-              <button
-                type="submit"
-                className="flex items-center gap-2 rounded-full bg-[#514ddd] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#4542ca]"
-              >
-                Buscar
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </button>
-            </form>
-            <div className="flex flex-wrap justify-center gap-2">
-              {TRENDING.map(({ label, icon: Icon }) => (
-                <span key={label} className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur">
-                  <Icon aria-hidden="true" className="size-3.5" />
-                  {label}
-                </span>
-              ))}
-            </div>
+            <EstablishmentSearch hero className="z-20 w-full max-w-2xl" />
           </div>
         </section>
 
-        <div className="mx-auto max-w-6xl space-y-20 px-5 pb-20">
-          <nav aria-label="Categorías" className="-mt-0 grid grid-cols-3 gap-4 rounded-b-2xl bg-white px-4 py-8 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:grid-cols-6">
+        <div className="mx-auto max-w-6xl space-y-9 px-4 pb-12 sm:px-6 lg:space-y-16">
+          <nav aria-label="Categorías" className="flex gap-3 overflow-x-auto sm:grid sm:grid-cols-6 rounded-b-2xl bg-white px-3 py-4 lg:py-7 shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
             {CATEGORIES.map(({ label, icon: Icon, href, tone }) => (
-              <Link key={label} href={href} className="group flex flex-col items-center gap-3 text-sm font-semibold">
-                <span className={`flex size-14 items-center justify-center rounded-full transition group-hover:scale-105 ${tone}`}>
+              <Link key={label} href={href} className="group flex shrink-0 flex-col items-center gap-2 text-sm font-semibold">
+                <span className={`flex size-10 lg:size-14 items-center justify-center rounded-full transition group-hover:scale-105 ${tone}`}>
                   <Icon aria-hidden="true" className="size-6" />
                 </span>
                 {label}
@@ -229,9 +180,11 @@ export default function HomePage() {
           </nav>
 
           <section className="space-y-6">
-            <SectionHeading eyebrow="Lo más buscado" title="Experiencias del momento" />
+            <SectionHeading eyebrow="Combos publicados" title="Experiencias del momento" />
+            {!experiences && <p role="status">Cargando experiencias…</p>}
+            {experiences?.length === 0 && <p className="rounded-2xl bg-white p-5 text-sm text-[#43506a]">{recommendedError ? "No fue posible cargar las experiencias." : "Todavía no hay combos publicados."}</p>}
             <div className="grid gap-6 md:grid-cols-2">
-              {displayedExperiences.map((experience) => {
+              {experiences?.map((experience) => {
                 const card = (
                   <>
                     <div className={`relative h-52 sm:h-60 ${experience.background}`}>

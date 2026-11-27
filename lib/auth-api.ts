@@ -155,6 +155,7 @@ async function sendRequest<TResponse>(
   endpoint: string,
   payload: unknown,
   options: RequestInit,
+  readBody: (response: Response) => Promise<TResponse | undefined> = readJson<TResponse>,
 ): Promise<TResponse | undefined> {
   if (!endpoint) {
     return undefined;
@@ -179,7 +180,7 @@ async function sendRequest<TResponse>(
     throw error;
   }
 
-  return readJson<TResponse>(response);
+  return readBody(response);
 }
 
 // Cuenta suspendida (B5): el backend responde 403 `{"code": "ACCOUNT_SUSPENDED", "reason"}` en cualquier
@@ -212,6 +213,10 @@ export function getAuthRequest<TResponse = void>(
   options: RequestInit = {},
 ): Promise<TResponse | undefined> {
   return sendRequest<TResponse>("GET", endpoint, NO_BODY, options);
+}
+
+export function getAuthFile(endpoint: string, options: RequestInit = {}): Promise<Blob | undefined> {
+  return sendRequest<Blob>("GET", endpoint, NO_BODY, { ...options, cache: "no-store" }, response => response.blob());
 }
 
 export function postAuthRequest<TPayload, TResponse = void>(

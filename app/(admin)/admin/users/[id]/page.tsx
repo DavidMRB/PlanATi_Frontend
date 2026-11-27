@@ -82,7 +82,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
       {detail && (
         <>
           <header className={`${card} flex flex-col gap-6 bg-gradient-to-br from-white to-[#f1f3ff] sm:p-8 lg:flex-row lg:items-start lg:justify-between`}>
-            <div className="flex min-w-0 items-start gap-4">
+            <div className="flex min-w-0 flex-col items-start gap-4 sm:flex-row">
               <Avatar user={detail} className="size-16 text-lg" />
               <div className="min-w-0 space-y-2">
                 <h1 className="text-2xl font-extrabold sm:text-3xl">{detail.full_name}</h1>
@@ -93,13 +93,13 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   {isSelf && <span className="rounded-full bg-[#fff4d6] px-2.5 py-1 text-[#8a5a00]">Tu cuenta</span>}
                 </div>
                 <ul className="space-y-1 rounded-xl bg-[#eef0ff] p-3 text-sm text-[#43506a]">
-                  <li className="flex items-center gap-2">
+                  <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Mail aria-hidden="true" className="size-4 text-[#514ddd]" />
                     {detail.email}
                     {detail.google_sub && <span className="text-xs text-[#6d6e7a]">(Google)</span>}
                   </li>
                   {detail.phone_number && (
-                    <li className="flex items-center gap-2">
+                    <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <Phone aria-hidden="true" className="size-4 text-[#514ddd]" />
                       {detail.phone_number}
                       <span className="text-xs text-[#6d6e7a]">{detail.phone_verified ? "verificado" : "sin verificar"}</span>
@@ -109,6 +109,11 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                 </ul>
               </div>
             </div>
+
+            <dl className="flex flex-wrap gap-2">
+              <div className="rounded-xl bg-white px-4 py-2"><dt className="text-xs text-[#43506a]">Reseñas</dt><dd className="text-lg font-bold text-[#514ddd]">{detail.reviews_count}</dd></div>
+              <div className="rounded-xl bg-white px-4 py-2"><dt className="text-xs text-[#43506a]">Reportes abiertos</dt><dd className="text-lg font-bold text-[#a30f35]">{detail.open_reports_count}</dd></div>
+            </dl>
 
             {/* Acciones: se ocultan las que el backend no permite sobre la propia cuenta. */}
             {!isSelf && (
@@ -163,7 +168,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
             </section>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <section className="space-y-4">
               <h2 className="flex items-center gap-2 text-lg font-bold">
                 <MessageSquare aria-hidden="true" className="size-5 text-[#514ddd]" />

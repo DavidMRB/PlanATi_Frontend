@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/common/Navbar";
 import PublicBottomBar from "@/components/common/PublicBottomBar";
 
@@ -10,6 +11,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     <>
       <Navbar />
       {children}
+      <Footer />
       <PublicBottomBar />
     </>
   );

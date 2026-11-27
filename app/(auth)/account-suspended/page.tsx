@@ -13,7 +13,7 @@ export default function AccountSuspendedPage() {
 
   return (
     <main className="flex min-h-[80vh] items-center justify-center bg-[#f6f7fc] px-4 py-6 text-[#17243d] sm:py-14">
-      <div className="relative w-full max-w-3xl space-y-5 overflow-hidden rounded-3xl bg-white p-5 text-center shadow-[0_12px_40px_rgba(50,43,120,0.12)] sm:p-9">
+      <div className="relative w-full max-w-4xl space-y-5 overflow-hidden rounded-3xl bg-white p-5 text-center shadow-[0_12px_40px_rgba(50,43,120,0.12)] sm:p-9">
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#be123c] via-[#d6154a] to-[#514ddd]" />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <BrandMark />
@@ -31,7 +31,7 @@ export default function AccountSuspendedPage() {
         </div>
 
         {suspended?.reason ? (
-          <div className="flex gap-3 rounded-2xl bg-[#eef0ff] px-4 py-4 text-left text-sm">
+          <div className="flex gap-3 rounded-2xl border border-[#f8cbd4] bg-[#fff1f3] px-4 py-4 text-left text-sm">
             <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[#a30f35]" />
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-[#a30f35]">Motivo de la suspensión</p>
@@ -40,9 +40,10 @@ export default function AccountSuspendedPage() {
           </div>
         ) : null}
 
-        <section className="space-y-3 text-left">
+        <div className="grid items-start gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <section className="space-y-3 rounded-2xl border border-[#e9ecf8] p-4 text-left">
           <h2 className="text-base font-extrabold">Acciones temporalmente limitadas</h2>
-          <ul className="grid gap-2 text-sm font-semibold text-[#43506a] sm:grid-cols-3">
+          <ul className="grid gap-2 text-sm font-semibold text-[#43506a] sm:grid-cols-1">
             <li className="flex items-center gap-2 rounded-xl bg-[#f3f5ff] p-3"><CalendarDays aria-hidden="true" className="size-4 shrink-0 text-[#a30f35]" /> Planear visitas</li>
             <li className="flex items-center gap-2 rounded-xl bg-[#f3f5ff] p-3"><MessageSquareOff aria-hidden="true" className="size-4 shrink-0 text-[#a30f35]" /> Publicar reseñas</li>
             <li className="flex items-center gap-2 rounded-xl bg-[#f3f5ff] p-3"><ShieldOff aria-hidden="true" className="size-4 shrink-0 text-[#a30f35]" /> Usar tu panel</li>
@@ -57,7 +58,8 @@ export default function AccountSuspendedPage() {
           </Link>
         </section>
 
-        <div className="flex justify-center">
+        </div>
+        <div className="flex justify-center border-t border-[#e9ecf8] pt-4">
           <LogoutButton className="justify-center bg-[#eef0ff] px-5 py-2.5 text-[#514ddd] hover:bg-[#e2e5ff] hover:text-[#514ddd]" />
         </div>
       </div>

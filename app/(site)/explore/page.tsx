@@ -1,6 +1,6 @@
 "use client";
 
-import { List, Loader2, LocateFixed, Map as MapIcon, MapPin, Search, Star, X } from "lucide-react";
+import { ChevronDown, List, Loader2, LocateFixed, Map as MapIcon, MapPin, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +15,7 @@ import {
   ESTABLISHMENT_TYPE_KEYS,
   ESTABLISHMENT_TYPES,
   establishmentTypeLabel,
-  formatRating,
+  formatRating, openStatus,
   isEstablishmentType,
   searchEstablishments,
   searchNearbyEstablishments,
@@ -25,6 +25,7 @@ import {
   type PublicEstablishment,
 } from "@/lib/establishments-api";
 import { formatDistance, haversineKm, toLatLng } from "@/lib/geo";
+import styles from "./explore.module.css";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const PAGE_SIZE = 20;
@@ -55,7 +56,7 @@ const chipClass = (active: boolean) =>
     active ? "bg-[#4c4cdd] text-white" : "bg-[#eef0ff] text-[#26344d] hover:bg-[#e2e5ff]"
   }`;
 const selectClass =
-  "h-10 rounded-xl bg-[#eef0ff] px-3 text-sm font-semibold text-[#26344d] outline-none focus:ring-2 focus:ring-[#6868e8]/50";
+  styles.select + " h-10 w-full min-w-0 rounded-xl border border-[#dce1f2] bg-[#f5f6ff] px-3 text-sm font-semibold text-[#26344d] focus-visible:outline-2 focus-visible:outline-[#514ddd]";
 
 type ExploreQuery = {
   search?: string;
@@ -125,7 +126,7 @@ export default function ExplorePage({ searchParams }: { searchParams: Promise<Ex
 
 function ExploreView({ params }: { params: ExploreParams }) {
   const router = useRouter();
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const splitView = useMediaQuery("(min-width: 768px)");
   const geo = useGeolocation({ mode: "nearby" });
 
   const navigate = useCallback(
@@ -247,11 +248,11 @@ function ExploreView({ params }: { params: ExploreParams }) {
   const cardRefs = useRef(new Map<number, HTMLElement>());
 
   useEffect(() => {
-    if (!selected || !isDesktop) return;
+    if (!selected || !splitView) return;
     cardRefs.current.get(selected.id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [selected, isDesktop]);
+  }, [selected, splitView]);
 
-  const showMap = isDesktop || params.view === "map";
+  const showMap = splitView || params.view === "map";
   const mapFilters = useMemo(
     () => ({
       category: params.category || undefined,
@@ -305,9 +306,12 @@ function ExploreView({ params }: { params: ExploreParams }) {
     );
   };
 
+  const extraFilterCount = Number(Boolean(params.type)) + Number(Boolean(params.minRating))
+    + Number(Boolean(params.sort)) + Number(nearActive && params.radius !== DEFAULT_RADIUS);
+
   return (
-    <main className="bg-[#f8f9ff] text-[#17243d] lg:grid lg:h-[calc(100vh-4.5rem)] lg:min-h-[36rem] lg:grid-cols-[minmax(26rem,30rem)_1fr]">
-      <section className="flex min-h-0 flex-col gap-5 px-5 py-6 lg:overflow-hidden">
+    <main className="bg-[#f8f9ff] text-[#17243d] md:grid md:h-[calc(100dvh-4.5rem)] md:min-h-[36rem] md:grid-cols-[minmax(0,46%)_minmax(0,1fr)] xl:grid-cols-[30rem_minmax(0,1fr)]">
+      <section aria-label="Directorio de establecimientos" className={styles.directory + " min-h-0 min-w-0 space-y-5 px-5 pt-6 pb-12"}>
         <header className="space-y-4">
           <div className="flex items-baseline justify-between gap-3">
             <h1 className="text-3xl font-extrabold">Explorar</h1>
@@ -330,7 +334,7 @@ function ExploreView({ params }: { params: ExploreParams }) {
             />
           </label>
 
-          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => void toggleNear()}
@@ -341,14 +345,16 @@ function ExploreView({ params }: { params: ExploreParams }) {
               {geo.isLocating ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <LocateFixed aria-hidden="true" className="size-4" />}
               Cerca de mí
             </button>
-            <button type="button" onClick={() => navigate({ category: "" })} className={chipClass(params.category === "")}>
-              Todos
-            </button>
-            {ESTABLISHMENT_CATEGORIES.map((item) => (
-              <button key={item} type="button" onClick={() => navigate({ category: item })} className={chipClass(params.category === item)}>
-                {item}
-              </button>
-            ))}
+            <label className="min-w-[9rem] flex-1">
+              <span className="sr-only">Categoría</span>
+              <select value={params.category} onChange={event => navigate({ category: event.target.value })} className={selectClass}>
+                <option value="">Todas las categorías</option>
+                {params.category && !ESTABLISHMENT_CATEGORIES.some(category => category === params.category) && (
+                  <option value={params.category}>{params.category}</option>
+                )}
+                {ESTABLISHMENT_CATEGORIES.map(category => <option key={category}>{category}</option>)}
+              </select>
+            </label>
           </div>
 
           {!nearActive && <LocationPurposeNote />}
@@ -358,67 +364,75 @@ function ExploreView({ params }: { params: ExploreParams }) {
             </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="sr-only" htmlFor="explore-type">
-              Tipo de establecimiento
-            </label>
-            <select id="explore-type" value={params.type} onChange={(event) => navigate({ type: event.target.value })} className={selectClass}>
-              <option value="">Todos los tipos</option>
-              {ESTABLISHMENT_TYPE_KEYS.map((type) => (
-                <option key={type} value={type}>
-                  {ESTABLISHMENT_TYPES[type]}
-                </option>
-              ))}
-            </select>
-            <label className="sr-only" htmlFor="explore-sort">
-              Ordenar por
-            </label>
-            <select id="explore-sort" value={sort} onChange={(event) => navigate({ sort: event.target.value })} className={selectClass}>
-              {sorts.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <label className="sr-only" htmlFor="explore-min">
-              Puntuación mínima
-            </label>
-            <select
-              id="explore-min"
-              value={params.minRating}
-              onChange={(event) => navigate({ minRating: Number(event.target.value) })}
-              className={selectClass}
-            >
-              {MIN_RATING_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {nearActive && (
-              <>
-                <label className="sr-only" htmlFor="explore-radius">
-                  Radio de búsqueda
-                </label>
-                <select
-                  id="explore-radius"
-                  value={params.radius}
-                  onChange={(event) => navigate({ radius: Number(event.target.value) })}
-                  className={selectClass}
-                >
-                  {RADIUS_OPTIONS.map((radius) => (
-                    <option key={radius} value={radius}>
-                      A {radius} km
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
+          <details className="group rounded-xl border border-[#dce1f2] bg-white">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-sm font-semibold text-[#43506a] focus-visible:outline-2 focus-visible:outline-[#514ddd] [&::-webkit-details-marker]:hidden">
+              <SlidersHorizontal aria-hidden="true" className="size-4 text-[#514ddd]" />
+              Más filtros
+              {extraFilterCount > 0 && <span className="rounded-full bg-[#e7e9ff] px-2 py-0.5 text-xs text-[#4643c2]">{extraFilterCount}<span className="sr-only"> activos</span></span>}
+              <ChevronDown aria-hidden="true" className="ml-auto size-4 group-open:rotate-180" />
+            </summary>
+            <div className="grid grid-cols-1 gap-2 border-t border-[#eef0ff] p-3 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+              <label className="sr-only" htmlFor="explore-type">
+                Tipo de establecimiento
+              </label>
+              <select id="explore-type" value={params.type} onChange={(event) => navigate({ type: event.target.value })} className={selectClass}>
+                <option value="">Todos los tipos</option>
+                {ESTABLISHMENT_TYPE_KEYS.map((type) => (
+                  <option key={type} value={type}>
+                    {ESTABLISHMENT_TYPES[type]}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="explore-sort">
+                Ordenar por
+              </label>
+              <select id="explore-sort" value={sort} onChange={(event) => navigate({ sort: event.target.value })} className={selectClass}>
+                {sorts.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="explore-min">
+                Puntuación mínima
+              </label>
+              <select
+                id="explore-min"
+                value={params.minRating}
+                onChange={(event) => navigate({ minRating: Number(event.target.value) })}
+                className={selectClass}
+              >
+                {MIN_RATING_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {nearActive && (
+                <>
+                  <label className="sr-only" htmlFor="explore-radius">
+                    Radio de búsqueda
+                  </label>
+                  <select
+                    id="explore-radius"
+                    value={params.radius}
+                    onChange={(event) => navigate({ radius: Number(event.target.value) })}
+                    className={selectClass}
+                  >
+                    {RADIUS_OPTIONS.map((radius) => (
+                      <option key={radius} value={radius}>
+                        A {radius} km
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </div>
+          </details>
         </header>
 
-        {/* En móvil y tablet, la vista de mapa reemplaza a la lista. */}
-        {!isDesktop && params.view === "map" ? (
+        {/* En móvil, la vista de mapa reemplaza a la lista. */}
+        {!splitView && params.view === "map" ? (
           <div className="relative -mx-5 h-[65dvh] min-h-[22rem]">
             <EstablishmentsMap
               filters={mapFilters}
@@ -446,7 +460,7 @@ function ExploreView({ params }: { params: ExploreParams }) {
             )}
           </div>
         ) : (
-          <div className="min-h-0 flex-1 space-y-4 lg:overflow-y-auto lg:pr-1">
+          <div className="min-w-0 space-y-4">
             {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
             {!items && !error && [0, 1, 2].map((key) => <div key={key} className="h-32 animate-pulse rounded-2xl bg-[#e9edff]" />)}
@@ -461,6 +475,7 @@ function ExploreView({ params }: { params: ExploreParams }) {
 
             {items?.map((establishment) => {
               const rating = formatRating(establishment.rating_avg);
+              const hours = openStatus(establishment.schedules ?? []);
               const distance = distanceOf(establishment);
               const active = hoveredId === establishment.id || selected?.id === establishment.id;
               const rawType = establishmentTypeLabel(establishment.establishment_type);
@@ -477,44 +492,45 @@ function ExploreView({ params }: { params: ExploreParams }) {
                   onMouseLeave={() => setHoveredId(null)}
                   onFocus={() => setHoveredId(establishment.id)}
                   onBlur={() => setHoveredId(null)}
-                  className={`group relative overflow-hidden rounded-2xl bg-white shadow-[0_4px_16px_rgba(23,36,61,0.06)] ring-2 transition hover:-translate-y-0.5 hover:shadow-lg ${
-                    active ? "ring-[#514ddd]" : "ring-transparent"
+                  className={`group relative overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(23,36,61,0.05)] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors ${
+                    active ? "bg-[#f3f4ff] after:border-[#514ddd]" : "bg-white after:border-[#e5e9f5]"
                   }`}
                 >
-                <Link href={`/establishments/${establishment.id}`} className="flex flex-col focus-visible:outline-none sm:flex-row">
-                  <div className="relative h-44 bg-[linear-gradient(135deg,#eef2ff,#e8fbfa)] sm:h-auto sm:min-h-32 sm:w-32 sm:shrink-0">
-                    {establishment.banner_image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2
-                      <img src={establishment.banner_image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
-                    )}
-                    {rating && (
-                      <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold shadow">
-                        <Star aria-hidden="true" className="size-3 fill-[#d6154a] text-[#d6154a]" />
-                        {rating}
-                        <span className="font-medium text-[#6d6e7a]">({establishment.rating_count})</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4 sm:pr-12">
-                    <h2 className="truncate text-lg font-bold group-hover:text-[#4c4cdd]">{establishment.name}</h2>
-                    <p className="text-xs font-semibold text-[#4c4cdd]">
-                      {establishment.category}
-                      {typeLabel && <span className="font-medium text-[#6d6e7a]"> · {typeLabel}</span>}
-                    </p>
-                    <p className="line-clamp-2 text-sm text-[#6d6e7a]">{establishment.description}</p>
-                    <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-[#6d6e7a]">
-                      <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-                      <span className="truncate">{establishment.address}</span>
-                      {distance !== null && <span className="ml-auto shrink-0 font-semibold text-[#26344d]">{formatDistance(distance)}</span>}
-                      {establishment.price_range && <span className="shrink-0 font-semibold">{establishment.price_range}</span>}
-                    </p>
-                  </div>
-                </Link>
-                <FavoriteButton
-                  establishmentId={establishment.id}
-                  name={establishment.name}
-                  className="absolute right-2 top-2"
-                />
+                  <Link href={`/establishments/${establishment.id}`} className="relative flex flex-col rounded-2xl focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#514ddd] xl:flex-row">
+                    <div className="relative h-44 bg-[linear-gradient(135deg,#eef2ff,#e8fbfa)] xl:h-auto xl:min-h-32 xl:w-32 xl:shrink-0">
+                      {establishment.banner_image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2
+                        <img src={establishment.banner_image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+                      )}
+                      {rating && (
+                        <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold shadow">
+                          <Star aria-hidden="true" className="size-3 fill-[#d6154a] text-[#d6154a]" />
+                          {rating}
+                          <span className="font-medium text-[#6d6e7a]">({establishment.rating_count})</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4 xl:pr-12">
+                      <h2 className="text-lg font-bold group-hover:text-[#4c4cdd]">{establishment.name}</h2>
+                      <p className="text-xs font-semibold text-[#4c4cdd]">
+                        {establishment.category}
+                        {typeLabel && <span className="font-medium text-[#6d6e7a]"> · {typeLabel}</span>}
+                      </p>
+                      <p className="line-clamp-2 text-sm text-[#6d6e7a]">{establishment.description}</p>
+                      <p className="mt-auto flex flex-wrap items-center gap-1.5 pt-1 text-xs text-[#6d6e7a]">
+                        <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+                        <span>{establishment.address}</span>
+                        {distance !== null && <span className="ml-auto shrink-0 font-semibold text-[#26344d]">{formatDistance(distance)}</span>}
+                        {hours && <span className={hours.open ? "font-semibold text-[#0b6b5c]" : "text-[#6d6e7a]"}>{hours.open ? "Abierto hasta " + hours.closesAt : "Cerrado ahora"}</span>}
+                        {establishment.price_range && <span className="shrink-0 font-semibold">{establishment.price_range}</span>}
+                      </p>
+                    </div>
+                  </Link>
+                  <FavoriteButton
+                    establishmentId={establishment.id}
+                    name={establishment.name}
+                    className="absolute right-2 top-2"
+                  />
                 </article>
               );
             })}
@@ -526,8 +542,8 @@ function ExploreView({ params }: { params: ExploreParams }) {
         )}
       </section>
 
-      {isDesktop && (
-        <aside aria-label="Mapa" className="relative hidden lg:block">
+      {splitView && (
+        <aside aria-label="Mapa" className="relative hidden md:block">
           {showMap && (
             <EstablishmentsMap
               filters={mapFilters}
@@ -543,8 +559,8 @@ function ExploreView({ params }: { params: ExploreParams }) {
         </aside>
       )}
 
-      {/* Botón flotante Lista/Mapa en móvil y tablet. */}
-      {!isDesktop && (
+      {/* Botón flotante Lista/Mapa en móvil. */}
+      {!splitView && (
         <button
           type="button"
           onClick={() => {

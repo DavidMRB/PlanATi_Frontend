@@ -21,7 +21,7 @@ import { StaticLocationMap } from "@/components/map/lazy";
 import AddToCalendarMenu from "@/components/plans/AddToCalendarMenu";
 import PlanStatusBadge from "@/components/plans/PlanStatusBadge";
 import Modal from "@/components/ui/Modal";
-import { formatDateTime } from "@/lib/datetime";
+import { formatDate, formatTime } from "@/lib/datetime";
 import { formatCop } from "@/lib/format";
 import { directionsUrl, mapsSearchUrl, toLatLng } from "@/lib/geo";
 import {
@@ -155,17 +155,20 @@ function PlanView({ planId }: { planId: number }) {
       )}
 
       <section className={`${card} space-y-4`}>
-        {plan.establishment.profile_image_url && (
-          // eslint-disable-next-line @next/next/no-img-element -- Imagen del establecimiento
-          <img src={plan.establishment.profile_image_url} alt="" className="h-36 w-full rounded-xl object-cover md:hidden" />
-        )}
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-2">
+          <div className="relative w-full min-w-0 space-y-2 overflow-hidden rounded-xl bg-[#292661] p-4 text-white md:w-auto md:overflow-visible md:rounded-none md:bg-transparent md:p-0 md:text-[#17243d]">
+            {plan.establishment.profile_image_url && (
+              // eslint-disable-next-line @next/next/no-img-element -- Imagen del establecimiento
+              <img src={plan.establishment.profile_image_url} alt="" className="pointer-events-none absolute inset-0 size-full object-cover md:hidden" />
+            )}
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#17243d] to-[#17243d]/40 md:hidden" />
+            <div className="relative space-y-2 pt-16 md:pt-0">
             <PlanStatusBadge status={plan.status} />
             <h1 className={`text-2xl font-extrabold tracking-tight sm:text-3xl ${plan.status === "CANCELLED" ? "text-[#81869a] line-through" : ""}`}>
               {plan.title}
             </h1>
-            <p className="text-sm font-semibold text-[#43506a]">{plan.establishment.name}</p>
+            <p className="text-sm font-semibold md:text-[#43506a]">{plan.establishment.name}</p>
+            </div>
           </div>
           {plan.status !== "CANCELLED" && <AddToCalendarMenu plan={plan} align="right" />}
         </div>
@@ -213,10 +216,11 @@ function PlanView({ planId }: { planId: number }) {
         <div className="min-w-0 space-y-5">
           <section className={`${card} space-y-4`}>
             <h2 className="flex items-center gap-2 text-lg font-extrabold"><CalendarDays aria-hidden="true" className="size-5 text-[#514ddd]" /> Detalles de la visita</h2>
-            <ul className="grid gap-2 text-sm sm:grid-cols-2">
-              <InfoItem icon={CalendarDays} label="Fecha y hora">
-                <span className="first-letter:uppercase">{formatDateTime(plan.scheduled_at)}</span>
+            <ul className="grid grid-cols-2 gap-2 text-sm md:grid-cols-3">
+              <InfoItem icon={CalendarDays} label="Fecha">
+                <span className="first-letter:uppercase">{formatDate(plan.scheduled_at, { year: undefined, weekday: "short", month: "short" })}</span>
               </InfoItem>
+              <InfoItem icon={CalendarDays} label="Hora">{formatTime(plan.scheduled_at)}</InfoItem>
               <InfoItem icon={Users} label="Personas">
                 {plan.party_size} {plan.party_size === 1 ? "persona" : "personas"}
               </InfoItem>

@@ -38,7 +38,7 @@ export default function AdminActivityPage() {
         <p className="max-w-2xl text-base text-[#6d6e7a]">Bitácora de moderación: quién hizo qué, sobre qué contenido y por qué.</p>
       </header>
 
-      <div className="grid grid-cols-2 items-end gap-3 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-5 lg:grid-cols-[minmax(0,15rem)_minmax(0,13rem)_1fr]">
+      <div className="grid grid-cols-2 items-end gap-3 rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(23,36,61,0.06)] sm:p-5 xl:grid-cols-[minmax(0,15rem)_minmax(0,13rem)_1fr]">
         <label className="grid min-w-0 gap-1.5 text-xs font-bold text-[#43506a]" htmlFor="activity-action">
           Tipo de acción
           <select id="activity-action" value={action} onChange={(event) => setAction(event.target.value)} className={select}>
@@ -61,7 +61,7 @@ export default function AdminActivityPage() {
             ))}
           </select>
         </label>
-        <button type="button" onClick={() => { setAction(""); setTargetType(""); }} disabled={!action && !targetType} className="col-span-2 ml-auto flex h-9 items-center gap-2 rounded-xl bg-[#f3f5ff] px-3 text-xs font-bold text-[#514ddd] disabled:opacity-50 lg:col-span-1 lg:h-10">
+        <button type="button" onClick={() => { setAction(""); setTargetType(""); }} disabled={!action && !targetType} className="col-span-2 ml-auto flex h-9 items-center gap-2 rounded-xl bg-[#f3f5ff] px-3 text-xs font-bold text-[#514ddd] disabled:opacity-50 xl:col-span-1 xl:h-10">
           <RotateCcw aria-hidden="true" className="size-4" /> Limpiar filtros
         </button>
       </div>
@@ -108,12 +108,15 @@ function ActivityPages({ action, targetType }: { action: string; targetType: str
   return (
     <div className="space-y-4">
       {error && <p className="rounded-2xl bg-[#fde8ea] px-5 py-4 text-sm font-semibold text-[#a30f35]">{error}</p>}
-      {total > 0 && <p className="text-sm font-bold text-[#514ddd]">{total} {total === 1 ? "acción registrada" : "acciones registradas"}</p>}
+      {!error && <dl className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl bg-[#eef0ff] p-4"><dt className="text-xs font-semibold">Acciones registradas con estos filtros</dt><dd className="text-2xl font-extrabold text-[#514ddd]">{total}</dd></div>
+        <div className="rounded-xl bg-[#e3f7f3] p-4"><dt className="text-xs font-semibold">Última acción del listado</dt><dd className="mt-1 text-sm font-bold text-[#006c60]">{items[0] ? formatDateTime(items[0].created_at) : "Sin registros"}</dd></div>
+      </dl>}
       {items.length === 0 && !error ? (
         <EmptyState icon={History} title="Sin actividad con esos filtros" />
       ) : (
-        <div className="lg:overflow-hidden lg:rounded-2xl lg:bg-white lg:shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
-          <div aria-hidden="true" className="hidden grid-cols-[2fr_1.25fr_1fr_1.2fr] gap-4 bg-[#eef2ff] px-5 py-4 text-xs font-bold uppercase tracking-wide text-[#43506a] lg:grid">
+        <div className="xl:overflow-hidden xl:rounded-2xl xl:bg-white xl:shadow-[0_8px_24px_rgba(23,36,61,0.06)]">
+          <div aria-hidden="true" className="hidden grid-cols-[2fr_1.25fr_1fr_1.2fr] gap-4 bg-[#eef2ff] px-5 py-4 text-xs font-bold uppercase tracking-wide text-[#43506a] xl:grid">
             <span>Acción</span><span>Destino</span><span>Fecha y hora</span><span>Responsable</span>
           </div>
           <ol className="space-y-3 lg:divide-y lg:divide-[#f0f2f8] lg:space-y-0">
@@ -121,7 +124,7 @@ function ActivityPages({ action, targetType }: { action: string; targetType: str
               const href = targetHref(item);
               const target = `${TARGET_TYPE_LABEL[item.target_type] ?? item.target_type} #${item.target_id}`;
               return (
-                <li key={item.id} className="grid gap-3 rounded-2xl bg-white p-4 text-sm shadow-sm lg:grid-cols-[2fr_1.25fr_1fr_1.2fr] lg:gap-4 lg:rounded-none lg:px-5 lg:shadow-none">
+                <li key={item.id} className="grid gap-3 rounded-2xl bg-white p-4 text-sm shadow-sm xl:grid-cols-[2fr_1.25fr_1fr_1.2fr] lg:gap-4 xl:rounded-none xl:px-5 xl:shadow-none">
                   <div className="min-w-0 space-y-1.5">
                     <p className={`inline-flex max-w-full break-words rounded-full px-2.5 py-1 text-xs font-bold ${actionTone(item.action)}`}>{MODERATION_ACTION_LABEL[item.action] ?? item.action}</p>
                     {item.reason && <p className="break-words text-[#43506a]">“{item.reason}”</p>}

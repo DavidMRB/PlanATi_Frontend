@@ -9,15 +9,14 @@ import BottomTabBar, { type TabItem } from "@/components/common/BottomTabBar";
 import LogoutButton from "@/components/common/LogoutButton";
 import { useAuth } from "@/components/providers/AuthProvider";
 import BrandMark from "@/components/ui/BrandMark";
-import PlaceholderLink from "@/components/ui/PlaceholderLink";
 import { ADMIN_COUNTS_CHANGED, getAdminDashboard } from "@/lib/admin-api";
 
 const REPORTS_PATH = "/admin/reports";
-const PENDING_PATH = "/admin/establishments?status=PENDING";
+const PENDING_PATH = "/admin/requests";
+const SETTINGS_PATH = "/admin/settings";
 
-// Sin href el ítem es un PlaceholderLink: la sección del diseño todavía no existe.
 // `count` indica qué contador del dashboard se muestra junto al ítem.
-const NAV_ITEMS: Array<{ href?: string; label: string; icon: LucideIcon; count?: "pending" | "reports" }> = [
+const NAV_ITEMS: Array<{ href: string; label: string; icon: LucideIcon; count?: "pending" | "reports" }> = [
   { href: "/admin/dashboard", label: "Resumen", icon: LayoutDashboard },
   { href: "/admin/establishments", label: "Establecimientos", icon: Store },
   { href: PENDING_PATH, label: "Solicitudes", icon: ClipboardCheck, count: "pending" },
@@ -25,7 +24,7 @@ const NAV_ITEMS: Array<{ href?: string; label: string; icon: LucideIcon; count?:
   { href: "/admin/reviews", label: "Reseñas", icon: MessageSquare },
   { href: REPORTS_PATH, label: "Reportes", icon: Flag, count: "reports" },
   { href: "/admin/activity", label: "Actividad", icon: History },
-  { label: "Configuración", icon: Settings },
+  { href: SETTINGS_PATH, label: "Configuración", icon: Settings },
 ];
 
 // Barra inferior móvil (la barra lateral solo se ve desde md).
@@ -104,22 +103,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const currentLabel = NAV_ITEMS.find((item) => item.href && !item.count && pathname.startsWith(item.href))?.label ??
-    (pathname.startsWith(REPORTS_PATH) ? "Reportes" : "Resumen");
+  const currentSection = NAV_ITEMS.find(({ href }) => pathname === href || pathname.startsWith(`${href}/`));
+  const currentLabel = currentSection?.label ?? "Resumen";
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f9ff] text-[#17243d] md:flex-row">
-      <aside className="hidden border-r border-[#e4e6f0] bg-white p-5 md:block md:w-64 md:shrink-0">
+      <aside className="hidden border-r border-[#e4e6f0] bg-white p-3 md:sticky md:top-0 md:block md:h-dvh md:w-48 md:shrink-0 md:self-start md:overflow-y-auto lg:w-52 xl:w-60 xl:p-5">
         <div className="flex items-center gap-2">
           <BrandMark compact />
-          <span className="text-xl font-extrabold tracking-tight text-[#514ddd]">PlanATi</span>
+          <span className="whitespace-nowrap text-lg font-extrabold tracking-tight text-[#514ddd] xl:text-xl">PlanATi</span>
           <span className="rounded-full bg-[#eef2ff] px-2.5 py-0.5 text-xs font-semibold text-[#4c4cdd]">Admin</span>
         </div>
 
         <nav aria-label="Administración" className="mt-6 flex flex-col gap-1">
           {NAV_ITEMS.map(({ href, label, icon: Icon, count: countKey }) => {
-            // "Solicitudes" es un filtro de Establecimientos: no se marca como activo por su cuenta.
-            const isActive = href && !href.includes("?") ? pathname.startsWith(href) : false;
+            const isActive = currentSection?.href === href;
             const count = countKey ? counts[countKey] : 0;
             const className = `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
               isActive ? "bg-[#514ddd] text-white shadow-[0_6px_16px_rgba(81,77,221,0.25)]" : "text-[#43506a] hover:bg-[#f3f5fb]"
@@ -138,14 +136,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 )}
               </>
             );
-            return href ? (
+            return (
               <Link key={label} href={href} aria-current={isActive ? "page" : undefined} className={className}>
                 {content}
               </Link>
-            ) : (
-              <PlaceholderLink key={label} className={className}>
-                {content}
-              </PlaceholderLink>
             );
           })}
         </nav>
@@ -159,9 +153,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           portal="Panel de Administración"
           current={currentLabel}
           userSubtitle="Administrador"
-          userLinks={[{ href: "/", label: "Ir al sitio" }]}
+          userLinks={[
+            { href: PENDING_PATH, label: "Solicitudes pendientes" },
+            { href: SETTINGS_PATH, label: "Configuración" },
+            { href: "/admin/activity", label: "Bitácora de actividad" },
+            { href: "/", label: "Ir al sitio" },
+          ]}
         />
-        <section className="flex-1 p-5 sm:p-8">{children}</section>
+        <section className="mx-auto w-full min-w-0 max-w-[96rem] flex-1 px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:py-6 xl:px-8">{children}</section>
       </div>
 
       <BottomTabBar items={TAB_ITEMS} label="Navegación de administración" />

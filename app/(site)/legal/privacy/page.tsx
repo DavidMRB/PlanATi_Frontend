@@ -217,7 +217,7 @@ export default function PrivacyPolicyPage() {
       title="Política de tratamiento de datos personales"
       mobileTitle="Privacidad y datos"
       mobileAccordion
-      related={{ href: "/profile#privacidad", title: "Tú decides qué compartes", action: "Gestionar privacidad en mi perfil" }}
+      related={{ href: "/profile#privacidad", title: "Tú decides qué compartes", action: "Gestionar privacidad en mi perfil", description: "Consulta tus consentimientos y gestiona tus datos personales desde tu cuenta." }}
       version={PRIVACY_POLICY_VERSION}
       effectiveDate={LEGAL_EFFECTIVE_DATE}
       intro={

@@ -1,7 +1,7 @@
 import { ArrowRight, CalendarPlus, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import FavoriteButton from "@/components/favorites/FavoriteButton";
-import { establishmentTypeLabel, formatRating, type PublicEstablishment } from "@/lib/establishments-api";
+import { establishmentTypeLabel, formatRating, openStatus, type PublicEstablishment } from "@/lib/establishments-api";
 import { formatDistance } from "@/lib/geo";
 
 type EstablishmentCardProps = {
@@ -15,6 +15,7 @@ type EstablishmentCardProps = {
 // un botón dentro de un <a> no es HTML válido y el clic navegaría.
 export default function EstablishmentCard({ establishment, distanceKm = null, className = "", showPlanActions = false }: EstablishmentCardProps) {
   const rating = formatRating(establishment.rating_avg);
+  const hours = openStatus(establishment.schedules ?? []);
   // El tipo solo se muestra si no repite la categoría ("Restaurante" · "Restaurante").
   const rawType = establishmentTypeLabel(establishment.establishment_type);
   const typeLabel = rawType && rawType.toLowerCase() !== establishment.category.trim().toLowerCase() ? rawType : null;
@@ -23,9 +24,9 @@ export default function EstablishmentCard({ establishment, distanceKm = null, cl
     <article className={`group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(23,36,61,0.06)] transition hover:-translate-y-0.5 hover:shadow-lg ${className}`}>
       <Link href={`/establishments/${establishment.id}`} className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#514ddd]">
         <div className={`relative bg-[linear-gradient(135deg,#eef2ff,#e8fbfa)] ${showPlanActions ? "h-48 sm:h-52" : "h-44"}`}>
-          {establishment.banner_image_url && (
+          {(establishment.banner_image_url || establishment.profile_image_url) && (
             // eslint-disable-next-line @next/next/no-img-element -- URLs públicas de R2
-            <img src={establishment.banner_image_url} alt="" loading="lazy" className="size-full object-cover" />
+            <img src={establishment.banner_image_url ?? establishment.profile_image_url ?? undefined} alt="" loading="lazy" className="size-full object-cover" />
           )}
           {showPlanActions && <span className="absolute bottom-3 left-3 max-w-[85%] truncate rounded-md bg-[#17243d]/85 px-2 py-1 text-xs font-semibold text-white">{establishment.category}</span>}
           {rating !== null && (
@@ -40,13 +41,14 @@ export default function EstablishmentCard({ establishment, distanceKm = null, cl
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {!showPlanActions && <span className="rounded-md bg-[#eef0ff] px-2 py-0.5 font-semibold text-[#514ddd]">{establishment.category}</span>}
             {typeLabel && <span className="text-[#6d6e7a]">{typeLabel}</span>}
+            {hours && <span className={hours.open ? "font-semibold text-[#0b6b5c]" : "text-[#6d6e7a]"}>{hours.open ? "Abierto hasta " + hours.closesAt : "Cerrado ahora"}</span>}
             {establishment.price_range && <span className="text-[#6d6e7a]">{(!showPlanActions || typeLabel) && "• "}{establishment.price_range}</span>}
           </div>
-          <h3 className="truncate text-lg font-bold group-hover:text-[#514ddd]">{establishment.name}</h3>
+          <h3 className="text-lg font-bold group-hover:text-[#514ddd]">{establishment.name}</h3>
           <p className="line-clamp-2 text-sm text-[#6d6e7a]">{establishment.description}</p>
           <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-[#6d6e7a]">
             <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-            <span className="truncate">{establishment.address}</span>
+            <span>{establishment.address}</span>
             {distanceKm !== null && <span className="ml-auto shrink-0 font-semibold">{formatDistance(distanceKm)}</span>}
           </p>
         </div>

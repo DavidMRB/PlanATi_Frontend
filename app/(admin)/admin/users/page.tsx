@@ -36,6 +36,17 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState<UserRole | "">("");
   const [status, setStatus] = useState<UserStatus | "">("");
 
+  const [roleTotals, setRoleTotals] = useState<Array<{ label: string; total: number }> | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all(ROLES.filter(item => item.value).map(async ({ value, label }) => {
+      const page = await listAdminUsers({ role: value || undefined, limit: 1 });
+      return { label, total: page?.total ?? 0 };
+    })).then(data => { if (active) setRoleTotals(data); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSearch(searchInput.trim());
@@ -43,11 +54,17 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_15rem]">
       <header className="space-y-2">
         <p className="text-xs font-bold uppercase tracking-widest text-[#514ddd]">Directorio de cuentas</p>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Usuarios</h1>
         <p className="max-w-2xl text-base text-[#6d6e7a]">Busca cuentas, revisa su actividad y suspende o reactiva cuando sea necesario.</p>
       </header>
+      {roleTotals && <section className="hidden space-y-2 rounded-xl bg-white p-4 shadow-sm lg:block">
+        <h2 className="text-sm font-bold">Distribución por rol</h2>
+        <dl className="space-y-1 text-xs">{roleTotals.map(({ label, total }) => <div key={label} className="flex justify-between gap-3"><dt>{label}</dt><dd className="font-bold text-[#514ddd]">{total.toLocaleString("es-CO")}</dd></div>)}</dl>
+      </section>}
+      </div>
 
       <AdminOverviewMetrics metrics={[
         { key: "users_count", label: "Cuentas registradas", tone: "bg-[#eef0ff] text-[#4039b6]" },

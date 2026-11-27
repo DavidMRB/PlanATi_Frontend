@@ -7,7 +7,7 @@ import {
   establishmentTypeLabel,
   formatRating,
   getEstablishmentDetail,
-  type EstablishmentSchedule,
+  openStatus,
   type PublicEstablishmentDetail,
 } from "@/lib/establishments-api";
 import FavoriteButton from "@/components/favorites/FavoriteButton";
@@ -16,6 +16,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { ReportButton } from "@/components/reviews/ReportDialog";
 import ReviewsSection from "@/components/reviews/ReviewsSection";
 import { directionsUrl, mapsSearchUrl, toLatLng } from "@/lib/geo";
+import { bogotaParts } from "@/lib/datetime";
 import { formatCop } from "@/lib/format";
 import type { MenuItem } from "@/lib/restaurant-api";
 
@@ -23,24 +24,6 @@ const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "
 const card = "rounded-3xl bg-white shadow-[0_8px_24px_rgba(23,36,61,0.06)]";
 
 const shortTime = (value: string) => value.slice(0, 5);
-
-// JS: getDay() 0 = domingo; el backend usa 0 = lunes.
-const todayIndex = () => (new Date().getDay() + 6) % 7;
-
-function openStatus(schedules: EstablishmentSchedule[]): { open: boolean; closesAt: string | null } | null {
-  if (schedules.length === 0) return null;
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  const today = schedules.filter((schedule) => schedule.day_of_week === todayIndex());
-  for (const schedule of today) {
-    const [openH, openM] = schedule.opening_time.split(":").map(Number);
-    const [closeH, closeM] = schedule.closing_time.split(":").map(Number);
-    if (minutes >= openH * 60 + openM && minutes < closeH * 60 + closeM) {
-      return { open: true, closesAt: shortTime(schedule.closing_time) };
-    }
-  }
-  return { open: false, closesAt: null };
-}
 
 export default function EstablishmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -128,8 +111,8 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#f8f9ff]" />
             </div>
 
-            <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
-              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-8">
+            <div className="relative mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-8">
                 <div className="min-w-0 space-y-10">
                   {/* Tarjeta principal sobre la portada */}
                   <section className={`${card} relative -mt-16 space-y-5 p-6 shadow-[0_12px_32px_rgba(23,36,61,0.12)] sm:-mt-24 sm:p-8`}>
@@ -253,9 +236,9 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </div>
 
-                <aside className="space-y-6 lg:pt-6">
-                  <section className={`${card} space-y-4 p-6 lg:-mt-24 lg:shadow-[0_12px_32px_rgba(23,36,61,0.12)]`}>
-                    <h2 className="flex items-center gap-2 text-xl font-extrabold">
+                <aside className="min-w-0 space-y-6 lg:-mt-24">
+                  <section aria-labelledby="establishment-hours" className={`${card} space-y-4 p-4 sm:p-6 lg:shadow-[0_12px_32px_rgba(23,36,61,0.12)]`}>
+                    <h2 id="establishment-hours" className="flex items-center gap-2 text-xl font-extrabold">
                       <Clock aria-hidden="true" className="size-5 text-[#0b6b5c]" />
                       Horarios
                     </h2>
@@ -265,7 +248,7 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                       <>
                         {status && (
                           <p
-                            className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold ${
+                            className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-4 py-3 text-sm font-bold ${
                               status.open ? "bg-[#e3f7f3] text-[#0b6b5c]" : "bg-[#fde0e3] text-[#a30f35]"
                             }`}
                           >
@@ -282,18 +265,20 @@ export default function EstablishmentDetailPage({ params }: { params: Promise<{ 
                           {/* GUIA #9 TEMA: Matrices (creación, recorrido y operaciones) -> consulta: muestra la fila (tramos) de cada día del horario. */}
                           {DAYS.map((day, index) => {
                             const daySchedules = schedules.filter((schedule) => schedule.day_of_week === index);
-                            const isToday = index === todayIndex();
+                            const isToday = index === bogotaParts().weekday;
                             return (
                               <li
                                 key={day}
-                                className={`flex items-center justify-between ${daySchedules.length === 0 ? "text-[#9295a4]" : ""} ${isToday ? "font-bold" : ""}`}
+                                className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 ${daySchedules.length === 0 ? "text-[#9295a4]" : ""} ${isToday ? "font-bold" : ""}`}
                               >
                                 <span>{day}</span>
-                                <span className={daySchedules.length > 0 ? "font-semibold" : ""}>
+                                <span className="ml-auto flex flex-wrap justify-end gap-x-2 gap-y-1 text-right tabular-nums">
                                   {daySchedules.length > 0
-                                    ? daySchedules
-                                        .map((schedule) => `${shortTime(schedule.opening_time)} - ${shortTime(schedule.closing_time)}`)
-                                        .join(" · ")
+                                    ? daySchedules.map((schedule) => (
+                                        <span key={schedule.id} className="whitespace-nowrap font-semibold">
+                                          {shortTime(schedule.opening_time)}–{shortTime(schedule.closing_time)}
+                                        </span>
+                                      ))
                                     : "Cerrado"}
                                 </span>
                               </li>

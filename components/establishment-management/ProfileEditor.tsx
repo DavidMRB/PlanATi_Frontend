@@ -513,12 +513,12 @@ export default function ProfileEditor({ api }: { api: EstablishmentManagementApi
                 </span>
               </div>
               <div className="space-y-1 p-4 pt-8">
-                <p className="truncate text-lg font-bold">{form.name || "Nombre del establecimiento"}</p>
+                <p className="text-lg font-bold">{form.name || "Nombre del establecimiento"}</p>
                 <p className="text-xs font-semibold text-[#0b6b5c]">{form.category || "Categoría"}</p>
                 <p className="line-clamp-2 text-sm text-[#6d6e7a]">{form.description || "Descripción del lugar"}</p>
                 <p className="flex items-center gap-1.5 pt-1 text-xs text-[#6d6e7a]">
                   <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-                  <span className="truncate">{form.address || "Dirección"}</span>
+                  <span className="min-w-0">{form.address || "Dirección"}</span>
                 </p>
               </div>
             </div>
@@ -537,7 +537,7 @@ export default function ProfileEditor({ api }: { api: EstablishmentManagementApi
         </aside>
       </div>
 
-      <div className={`fixed inset-x-0 z-30 border-t border-[#e4e6f0] bg-white/95 p-4 backdrop-blur lg:hidden ${adminMode ? "bottom-16 md:bottom-0" : "bottom-0"}`}>
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 mt-4 rounded-xl border border-[#e4e6f0] bg-white/95 p-2 backdrop-blur md:bottom-3 lg:hidden">
         <button
           type="submit"
           form="profile-form"
